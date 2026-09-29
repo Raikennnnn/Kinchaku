@@ -2,6 +2,10 @@
 # screen) and attaches the signed APK to each GitHub release as kinchaku.apk,
 # which the website's "Download APK" button links to.
 #
+# A release runs the workflow as it was in the release's own tagged commit.
+# For a release tagged before this file existed (v0.1.0), start it by hand:
+# Actions > Android APK > Run workflow, with that tag.
+#
 # Signing needs three repository secrets (Settings > Secrets and variables >
 # Actions): ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD and
 # ANDROID_KEY_ALIAS. Without them, test builds still run but aren't signed.
@@ -11,6 +15,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build and attach the APK to (e.g. v0.1.0). Empty = test build only."
+        required: false
+        default: ""
   push:
     branches: [main]
     paths: ["android/**", ".github/workflows/android.yml"]
@@ -27,7 +36,9 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     env:
-      VERSION: ${{ github.event.release.tag_name || 'v0.0.0' }}
+      VERSION: ${{ github.event.release.tag_name || inputs.tag || 'v0.0.0' }}
+      # Whether this run should end up on a release (published, or started by hand with a tag).
+      FOR_RELEASE: ${{ github.event_name == 'release' || (github.event_name == 'workflow_dispatch' && inputs.tag != '') }}
     steps:
       - uses: actions/checkout@v7
 
@@ -63,7 +74,7 @@ jobs:
           "$BUILD_TOOLS/zipalign" -p -f 4 "$UNSIGNED" aligned.apk
           if [ -z "$KEYSTORE_BASE64" ]; then
             echo "::warning::No signing secrets set: the APK isn't signed and can't be installed."
-            if [ "${{ github.event_name }}" = "release" ]; then
+            if [ "$FOR_RELEASE" = "true" ]; then
               echo "::error::A release needs a signed APK. Add the signing secrets, then re-run this workflow."
               exit 1
             fi
@@ -81,13 +92,13 @@ jobs:
           echo "apk=kinchaku.apk" >> "$GITHUB_OUTPUT"
 
       - name: Attach to the release
-        if: github.event_name == 'release'
+        if: env.FOR_RELEASE == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: gh release upload "$VERSION" kinchaku.apk --clobber
 
       - name: Keep the test build
-        if: github.event_name != 'release'
+        if: env.FOR_RELEASE != 'true'
         uses: actions/upload-artifact@v7
         with:
           name: kinchaku-apk
