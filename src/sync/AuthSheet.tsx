@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCircleIcon, EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
 import { Sheet } from "../components/Sheet";
@@ -15,10 +15,11 @@ const MIN_PASSWORD = 8;
 /** Sign in, create an account, or get a password reset email. */
 export function AuthSheet({ open, onClose, startIn = "signin" }: { open: boolean; onClose: () => void; startIn?: Mode }) {
   const [mode, setMode] = useState<Mode>(startIn);
-  const close = () => {
-    onClose();
-    setMode(startIn);
-  };
+  // Each opening starts where the button said: "Create account" or "Sign in".
+  useEffect(() => {
+    if (open) setMode(startIn);
+  }, [open, startIn]);
+  const close = onClose;
   return (
     <Sheet open={open} title={TITLES[mode]} onClose={close}>
       <AuthForm mode={mode} setMode={setMode} onDone={close} />

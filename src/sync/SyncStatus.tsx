@@ -1,5 +1,10 @@
+import { useState } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { motion } from "motion/react";
+import { getSetting } from "../db";
 import { CloudArrowUpIcon, CloudCheckIcon, CloudSlashIcon, CloudWarningIcon, DeviceMobileIcon, type Icon } from "@phosphor-icons/react";
+import { AuthSheet } from "./AuthSheet";
+import { syncConfigured } from "./config";
 import { useSyncStatus, type SyncStatus } from "./store";
 
 const plural = (n: number) => `${n} change${n === 1 ? "" : "s"}`;
@@ -64,9 +69,27 @@ export function SyncBadge({ onOpen }: { onOpen: () => void }) {
   );
 }
 
-/** Sidebar footer line: where the data is. */
+/** Sidebar footer line: where the data is. Signed out, it offers signing in. */
 export function SyncLine() {
   const status = useSyncStatus();
+  const [signingIn, setSigningIn] = useState(false);
+  // A device that has signed in before is restoring its session, not signed out.
+  const owner = useLiveQuery(() => getSetting<string>("sync:uid"));
+  if (syncConfigured && !status.user && owner === undefined) {
+    return (
+      <>
+        <button
+          type="button"
+          onClick={() => setSigningIn(true)}
+          className="-mx-2 flex items-center gap-2 rounded-full px-2 py-1 text-left text-xs font-medium text-muted transition hover:bg-surface-2 hover:text-ink"
+        >
+          <CloudArrowUpIcon size={14} weight="duotone" aria-hidden="true" />
+          Sign in to sync
+        </button>
+        <AuthSheet open={signingIn} onClose={() => setSigningIn(false)} />
+      </>
+    );
+  }
   return (
     <p className="flex items-center gap-2 text-xs text-muted">
       <SyncIcon status={status} size={14} />

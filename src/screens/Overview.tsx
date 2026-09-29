@@ -21,6 +21,7 @@ import { EntrySheet } from "../components/EntrySheet";
 import { InstallHint } from "../components/InstallHint";
 import { EASE_OUT } from "../components/motion";
 import { PeriodNav } from "../components/PeriodPicker";
+import { SyncPrompt } from "../sync/SyncPrompt";
 import { TransactionList } from "../components/TransactionList";
 import { ProgressBar } from "../components/ui";
 
@@ -105,6 +106,7 @@ export function Overview() {
     <>
       <main className="mx-auto max-w-lg overflow-x-clip px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+11rem)] lg:max-w-6xl lg:px-10 lg:pt-10 lg:pb-16">
         <InstallHint />
+        <SyncPrompt />
 
         <div className="flex items-end gap-3">
           <div className="min-w-0 flex-1">
