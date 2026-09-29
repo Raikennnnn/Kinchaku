@@ -1,6 +1,14 @@
 import { useSyncExternalStore } from "react";
 
-export type SyncUser = { uid: string; email: string | null; name: string | null; photo: string | null; provider: "password" | "google" };
+export type SyncUser = {
+  uid: string;
+  email: string | null;
+  name: string | null;
+  photo: string | null;
+  provider: "password" | "google";
+  /** Email and password accounts: whether the address has been confirmed. */
+  verified: boolean;
+};
 
 export type SyncStatus = {
   /** off: signed out. starting: signing in or first download. */

@@ -18,6 +18,8 @@ const MESSAGES: Record<string, string> = {
   "auth/unauthorized-domain": "Sign-in isn't set up for this address yet.",
   "auth/operation-not-allowed": "This sign-in method isn't switched on yet.",
   "auth/user-disabled": "This account has been turned off.",
+  "auth/requires-recent-login": "For your safety, sign out and sign back in first, then delete your account within a few minutes.",
+  "auth/password-does-not-meet-requirements": "Use at least 8 characters for your password.",
   "auth/account-exists-with-different-credential": "This email already signs in another way. Try email and password.",
   "permission-denied": "The account refused the data. The database rules may not be set up yet.",
   unavailable: "Can't reach the account right now. Your changes are safe here and will sync later.",

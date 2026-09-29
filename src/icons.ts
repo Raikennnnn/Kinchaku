@@ -70,5 +70,6 @@ export type PresetIconName = keyof typeof PRESET_ICONS;
 
 /** Looks up a stored icon key, falling back to a tag for unknown keys (e.g. from a newer app version). */
 export function presetIcon(name: string): Icon {
-  return (PRESET_ICONS as Record<string, Icon>)[name] ?? TagIcon;
+  // Own keys only: a stored name like "constructor" must not reach Object's prototype.
+  return Object.hasOwn(PRESET_ICONS, name) ? (PRESET_ICONS as Record<string, Icon>)[name]! : TagIcon;
 }

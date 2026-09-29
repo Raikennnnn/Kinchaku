@@ -1,12 +1,11 @@
 import type { Table } from "dexie";
 import { CATEGORY_COLORS } from "../categories";
-import { db, getSetting, setSetting, stamp, type AccountType, type IconRef } from "../db";
-import { PRESET_ICONS } from "../icons";
+import { db, getSetting, setSetting, stamp } from "../db";
 import { toCsv, parseCsv } from "../lib/csv";
 import { ISO_DATE, today } from "../lib/dates";
-import { ICON_DATA_URL } from "../lib/image";
 import { amountToInput, currencyDigits, SCALE } from "../lib/money";
 import { listAccounts } from "./accounts";
+import { cleanRecord, isCurrency } from "./validate";
 
 const TABLES = [
   "ledgers",
@@ -19,7 +18,6 @@ const TABLES = [
   "goals",
   "goalDeposits",
 ] as const;
-type TableName = (typeof TABLES)[number];
 
 const BACKUP_FORMAT = "kinchaku-backup";
 
@@ -41,51 +39,6 @@ export async function exportBackup(): Promise<string> {
     1,
   );
 }
-
-// Validation for imported records. Anything that doesn't match is skipped:
-// a backup file is untrusted input (it may have been edited or come from elsewhere).
-const ID = /^[A-Za-z0-9:_.\-]{1,160}$/;
-const COLOR = /^#[0-9a-fA-F]{6}$/;
-const isStr = (v: unknown, max: number): v is string => typeof v === "string" && v.length <= max;
-const isInt = (v: unknown, min = -1e15, max = 1e15): v is number => Number.isInteger(v) && (v as number) >= min && (v as number) <= max;
-const isDate = (v: unknown): v is string => typeof v === "string" && ISO_DATE.test(v);
-const isKind = (v: unknown) => v === "income" || v === "expense";
-const isId = (v: unknown): v is string => typeof v === "string" && ID.test(v);
-const isOptId = (v: unknown) => v === null || isId(v);
-
-function isIcon(v: unknown): v is IconRef {
-  if (typeof v !== "object" || v === null) return false;
-  const i = v as Record<string, unknown>;
-  if (i.kind === "preset") return typeof i.name === "string" && i.name in PRESET_ICONS;
-  if (i.kind === "custom") return isStr(i.dataUrl, 300_000) && ICON_DATA_URL.test(i.dataUrl as string);
-  return false;
-}
-
-const base = (r: Record<string, unknown>) =>
-  isId(r.id) && isInt(r.createdAt, 0) && isInt(r.updatedAt, 0) && typeof r.deleted === "boolean";
-
-const ACCOUNT_TYPES: AccountType[] = ["cash", "bank", "ewallet", "card", "savings", "loan"];
-
-const VALID: Record<TableName, (r: Record<string, unknown>) => boolean> = {
-  ledgers: (r) => base(r) && isStr(r.name, 40) && typeof r.icon === "string" && r.icon in PRESET_ICONS && isStr(r.color, 7) && COLOR.test(r.color as string) && isInt(r.order),
-  categories: (r) =>
-    base(r) && isStr(r.name, 40) && isIcon(r.icon) && isStr(r.color, 7) && COLOR.test(r.color as string) &&
-    isKind(r.kind) && isInt(r.order) && typeof r.builtIn === "boolean" &&
-    (r.quickNotes === undefined || (Array.isArray(r.quickNotes) && r.quickNotes.length <= 20 && r.quickNotes.every((n) => isStr(n, 40)))) &&
-    (r.system === undefined || typeof r.system === "boolean"),
-  accounts: (r) => base(r) && isId(r.ledgerId) && isStr(r.name, 40) && ACCOUNT_TYPES.includes(r.type as AccountType) && isIcon(r.icon) && isStr(r.color, 7) && COLOR.test(r.color as string) && isInt(r.opening) && isInt(r.order),
-  transactions: (r) =>
-    base(r) && isId(r.ledgerId) && isKind(r.type) && isInt(r.amount, 0) && isId(r.categoryId) && isOptId(r.accountId) &&
-    isDate(r.date) && isStr(r.note, 200) && typeof r.excluded === "boolean" && isOptId(r.recurringId),
-  transfers: (r) => base(r) && isId(r.ledgerId) && isId(r.fromId) && isId(r.toId) && isInt(r.amount, 0) && isDate(r.date) && isStr(r.note, 200),
-  budgets: (r) => base(r) && isId(r.ledgerId) && isId(r.categoryId) && isInt(r.amount, 0),
-  recurring: (r) =>
-    base(r) && isId(r.ledgerId) && isKind(r.type) && isInt(r.amount, 0) && isId(r.categoryId) && isOptId(r.accountId) &&
-    isStr(r.note, 200) && typeof r.excluded === "boolean" && ["daily", "weekly", "monthly", "yearly"].includes(r.frequency as string) &&
-    isDate(r.startDate) && isDate(r.nextDate) && typeof r.active === "boolean",
-  goals: (r) => base(r) && isId(r.ledgerId) && isStr(r.name, 40) && isInt(r.target, 0) && isIcon(r.icon) && isStr(r.color, 7) && COLOR.test(r.color as string) && (r.deadline === null || isDate(r.deadline)) && isInt(r.order),
-  goalDeposits: (r) => base(r) && isId(r.ledgerId) && isId(r.goalId) && isInt(r.amount) && isDate(r.date) && isStr(r.note, 200) && isOptId(r.transactionId),
-};
 
 export type ImportResult = { added: number; updated: number; skipped: number; invalid: number };
 
@@ -113,11 +66,13 @@ export async function importBackup(json: string): Promise<ImportResult> {
       if (!Array.isArray(rows)) continue;
       const table = db[name] as Table<Record<string, unknown>, string>;
       for (const row of rows.slice(0, 200_000)) {
-        if (typeof row !== "object" || row === null || !VALID[name](row as Record<string, unknown>)) {
+        // Checked and trimmed to known fields (see validate.ts).
+        const clean = cleanRecord(name, row);
+        if (!clean) {
           result.invalid++;
           continue;
         }
-        const incoming = row as Record<string, unknown> & { id: string; updatedAt: number };
+        const incoming = clean as Record<string, unknown> & { id: string; updatedAt: number };
         const existing = await table.get(incoming.id);
         if (existing && (existing.updatedAt as number) >= incoming.updatedAt) {
           result.skipped++;
@@ -129,7 +84,7 @@ export async function importBackup(json: string): Promise<ImportResult> {
       }
     }
   });
-  if (typeof (d as { currency?: unknown }).currency === "string" && !(await getSetting("currency"))) {
+  if (isCurrency((d as { currency?: unknown }).currency) && !(await getSetting("currency"))) {
     await setSetting("currency", (d as { currency: string }).currency);
   }
   return result;

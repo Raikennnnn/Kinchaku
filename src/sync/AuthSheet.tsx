@@ -1,6 +1,8 @@
 import { useEffect, useState, type FormEvent } from "react";
+import { useLiveQuery } from "dexie-react-hooks";
 import { AnimatePresence, motion } from "motion/react";
 import { CheckCircleIcon, EyeIcon, EyeSlashIcon } from "@phosphor-icons/react";
+import { db, getSetting } from "../db";
 import { Sheet } from "../components/Sheet";
 import { FormError } from "../components/ui";
 import { EASE_OUT } from "../components/motion";
@@ -11,6 +13,16 @@ type Mode = "signin" | "signup" | "reset";
 
 const TITLES: Record<Mode, string> = { signin: "Sign in", signup: "Create account", reset: "Reset password" };
 const MIN_PASSWORD = 8;
+
+// After a few wrong passwords in a row, the form waits a little longer each
+// time before trying again. Firebase also limits attempts on its side; this
+// just stops the form from hammering it.
+let failures = 0;
+let waitUntil = 0;
+const noteFailure = () => {
+  failures++;
+  if (failures >= 3) waitUntil = Date.now() + Math.min(60, 2 ** (failures - 2) * 5) * 1000;
+};
 
 /** Sign in, create an account, or get a password reset email. */
 export function AuthSheet({ open, onClose, startIn = "signin" }: { open: boolean; onClose: () => void; startIn?: Mode }) {
@@ -34,6 +46,10 @@ function AuthForm({ mode, setMode, onDone }: { mode: Mode; setMode: (m: Mode) =>
   const [busy, setBusy] = useState<"email" | "google" | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [resetSent, setResetSent] = useState(false);
+  // What's on this device before its first sign-in goes up to the account, so say so.
+  const localEntries = useLiveQuery(async () =>
+    (await getSetting<string>("sync:uid")) ? 0 : db.transactions.filter((t) => !t.deleted).count(),
+  );
 
   const switchTo = (m: Mode) => {
     setMode(m);
@@ -48,6 +64,11 @@ function AuthForm({ mode, setMode, onDone }: { mode: Mode; setMode: (m: Mode) =>
       setError(`Use at least ${MIN_PASSWORD} characters for your password.`);
       return;
     }
+    const wait = Math.ceil((waitUntil - Date.now()) / 1000);
+    if (wait > 0 && mode === "signin") {
+      setError(`Too many tries. Wait ${wait} second${wait === 1 ? "" : "s"}, then try again.`);
+      return;
+    }
     setBusy("email");
     try {
       const sync = await loadSync();
@@ -56,9 +77,11 @@ function AuthForm({ mode, setMode, onDone }: { mode: Mode; setMode: (m: Mode) =>
         setResetSent(true);
       } else {
         await (mode === "signup" ? sync.signUpWithEmail(email, password) : sync.signInWithEmail(email, password));
+        failures = 0;
         onDone();
       }
     } catch (err) {
+      if (mode === "signin") noteFailure();
       setError(friendlyError(err) || null);
     } finally {
       setBusy(null);
@@ -91,6 +114,11 @@ function AuthForm({ mode, setMode, onDone }: { mode: Mode; setMode: (m: Mode) =>
           {mode === "reset"
             ? "Enter the email you signed up with and we'll send you a link to choose a new password."
             : "One account keeps your phone and computer in step. Everything still works offline and syncs when you're back online."}
+          {mode !== "reset" && !!localEntries && (
+            <span className="mt-2 block text-sm">
+              The {localEntries} entr{localEntries === 1 ? "y" : "ies"} already on this device will be added to the account.
+            </span>
+          )}
         </p>
 
         {mode !== "reset" && (

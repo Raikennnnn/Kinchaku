@@ -3,11 +3,13 @@ import {
   browserLocalPersistence,
   browserPopupRedirectResolver,
   createUserWithEmailAndPassword,
+  deleteUser,
   getRedirectResult,
   GoogleAuthProvider,
   indexedDBLocalPersistence,
   initializeAuth,
   onAuthStateChanged,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
   signInWithPopup,
@@ -19,6 +21,7 @@ import {
 import {
   collection,
   doc,
+  getDocs,
   initializeFirestore,
   onSnapshot,
   orderBy,
@@ -92,7 +95,14 @@ export async function start() {
 
 function toSyncUser(user: User): SyncUser {
   const google = user.providerData.some((p) => p.providerId === "google.com");
-  return { uid: user.uid, email: user.email, name: user.displayName, photo: user.photoURL, provider: google ? "google" : "password" };
+  return {
+    uid: user.uid,
+    email: user.email,
+    name: user.displayName,
+    photo: user.photoURL,
+    provider: google ? "google" : "password",
+    verified: user.emailVerified,
+  };
 }
 
 /** Syncs this device with the signed-in account until sign-out. */
@@ -266,7 +276,14 @@ function end() {
 /* ---------- Signing in and out ---------- */
 
 export async function signUpWithEmail(email: string, password: string) {
-  await createUserWithEmailAndPassword(auth, email.trim(), password);
+  const { user } = await createUserWithEmailAndPassword(auth, email.trim(), password);
+  // Confirms the address is theirs; the account works meanwhile.
+  sendEmailVerification(user).catch(() => {});
+}
+
+/** Sends the confirmation email again. */
+export async function resendVerification() {
+  if (auth.currentUser) await sendEmailVerification(auth.currentUser);
 }
 
 export async function signInWithEmail(email: string, password: string) {
@@ -295,6 +312,30 @@ export async function signInWithGoogle() {
     return;
   }
   await signInWithPopup(auth, provider);
+}
+
+/**
+ * Deletes the account and everything in it, then clears this device.
+ * Firebase only allows it shortly after signing in, so an unattended
+ * signed-in phone can't be used to wipe someone's account.
+ */
+export async function deleteAccount() {
+  const user = auth.currentUser;
+  if (!user) return;
+  const signedInAt = Date.parse(user.metadata.lastSignInTime ?? "");
+  if (!(Date.now() - signedInAt < 4 * 60_000)) throw Object.assign(new Error("recent login"), { code: "auth/requires-recent-login" });
+  end(); // stop syncing so nothing is sent back up
+  for (const table of REMOTE_TABLES) {
+    const snap = await getDocs(collection(fs, "users", user.uid, table));
+    for (let i = 0; i < snap.docs.length; i += BATCH) {
+      const batch = writeBatch(fs);
+      snap.docs.slice(i, i + BATCH).forEach((d) => batch.delete(d.ref));
+      await batch.commit();
+    }
+  }
+  await deleteUser(user);
+  await clearDevice();
+  location.reload();
 }
 
 /** Signs out and clears this device, so the next person starts fresh. The account keeps everything. */

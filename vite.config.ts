@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
@@ -7,8 +8,17 @@ import { VitePWA } from "vite-plugin-pwa";
 // The site lives under a sub-path on GitHub Pages (/kinchaku/); set BASE_PATH there.
 const base = process.env.BASE_PATH ?? "/";
 
+// `npm run preview` sends the same security headers as the live site
+// (vercel.json), so a Content-Security-Policy problem shows up locally first.
+type VercelHeaders = { headers: { source: string; headers: { key: string; value: string }[] }[] };
+const vercel = JSON.parse(readFileSync(resolve(import.meta.dirname, "vercel.json"), "utf8")) as VercelHeaders;
+const siteHeaders = Object.fromEntries(
+  (vercel.headers.find((h) => h.source.startsWith("/((?!__/)"))?.headers ?? []).map((h) => [h.key, h.value]),
+);
+
 export default defineConfig({
   base,
+  preview: { headers: siteHeaders },
   build: {
     rolldownOptions: {
       // Two pages: the website at / and the app itself at /app/.

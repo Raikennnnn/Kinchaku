@@ -1,4 +1,5 @@
 import { db, getSetting, setSetting, SYNCED_SETTINGS, SYNCED_TABLES, syncTransaction, type SyncedTable } from "../db";
+import { cleanRecord, cleanSetting } from "../data/validate";
 
 // How this device's records meet the account's. Kept apart from Firebase so
 // the rules can be tested without it.
@@ -53,8 +54,10 @@ export async function applyRemote(table: RemoteTable, rows: Row[], preferRemote 
   let changed = 0;
   await syncTransaction([table], async () => {
     const t = db.table(table);
-    for (const row of rows) {
-      if (table === "settings" && !SYNCED_SETTINGS.includes(String(row.key))) continue;
+    for (const raw of rows) {
+      // Anything signed in as this person could have written it: check it like a backup file.
+      const row = (table === "settings" ? cleanSetting(raw) : cleanRecord(table, raw)) as Row | null;
+      if (!row) continue;
       const local = (await t.get(keyOf(table, row))) as Row | undefined;
       const remoteAt = Number(row.updatedAt ?? 0);
       const localAt = Number(local?.updatedAt ?? 0);

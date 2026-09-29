@@ -59,6 +59,21 @@ Signing in is optional; the app works the same without it. Code is in
   win, and the device's existing entries are added to the account.
 - Signing out clears the device; the account keeps everything.
 
+### Security
+
+- `firestore.rules`: each person reaches only `users/{their uid}/…`, in the
+  app's tables, and writes must look like the app's records (server-stamped
+  `syncedAt`, matching id, bounded text and picture sizes, few fields).
+- Everything from outside the device (a backup file or the account) is checked
+  and trimmed to known fields before it's stored (`src/data/validate.ts`).
+- Security headers for every page are in `vercel.json` (a strict
+  Content-Security-Policy with no inline scripts, no framing, nosniff, a
+  referrer policy, and camera, microphone and location switched off);
+  `npm run preview` sends the same ones.
+- No cookies, analytics or third-party requests unless you sign in.
+- Accounts can be deleted from Settings (all synced data goes with them), and
+  signing out clears the device.
+
 ### Firebase setup (once per project)
 
 1. Authentication → Sign-in method: turn on **Email/Password** and **Google**.

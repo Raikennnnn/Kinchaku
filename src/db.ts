@@ -1,6 +1,7 @@
 import Dexie, { type EntityTable } from "dexie";
 import { DEFAULT_CATEGORIES, type Kind } from "./categories";
 import type { PresetIconName } from "./icons";
+import { isCurrency } from "./data/validate";
 
 export type { Kind } from "./categories";
 
@@ -321,7 +322,8 @@ export const setSetting = (key: string, value: unknown) => db.settings.put({ key
 /** The chosen currency code, or null before the user has picked one. */
 export async function getCurrency(): Promise<string | null> {
   const v = await getSetting<unknown>("currency");
-  return typeof v === "string" ? v : null;
+  // A code the browser can't format money in would break every screen: ask again instead.
+  return isCurrency(v) ? v : null;
 }
 
 export const setCurrency = (code: string) => setSetting("currency", code);

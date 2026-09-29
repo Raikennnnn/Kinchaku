@@ -437,9 +437,36 @@ function IPhoneCard({ current }: { current: boolean }) {
   );
 }
 
+const PRIVACY_POINTS = [
+  {
+    title: "Without an account",
+    text: "Everything you enter is saved in this browser on this device and never leaves it. No cookies, no analytics.",
+  },
+  {
+    title: "With an account",
+    text: "Your entries and a few settings (currency, the cat's name) are copied to Google Firebase, on servers in Singapore, so your other devices can sync. Only your signed-in account can read them.",
+  },
+  {
+    title: "What sign-in keeps",
+    text: "Your email address, plus your name and photo if you use Google, to sign you in. Nothing else about you.",
+  },
+  {
+    title: "Koban the cat",
+    text: "Answers on your device from your own entries. Your questions aren't sent anywhere.",
+  },
+  {
+    title: "Deleting",
+    text: "Signing out clears the device. Settings, then Account, then Delete account removes your account and everything synced, for good.",
+  },
+  {
+    title: "Honestly",
+    text: "Kinchaku's developer runs the Firebase project, so could technically reach stored data. It isn't looked at, shared or sold.",
+  },
+];
+
 function Privacy() {
   return (
-    <section aria-labelledby="privacy-heading" className="mx-auto max-w-6xl px-5 py-24 lg:py-36">
+    <section id="privacy" aria-labelledby="privacy-heading" className="mx-auto max-w-6xl scroll-mt-16 px-5 py-24 lg:py-36">
       <div className="grid gap-8 lg:grid-cols-[auto_1fr] lg:gap-14">
         <Reveal>
           <ShieldCheckIcon size={64} weight="duotone" aria-hidden="true" className="text-accent-text" />
@@ -455,6 +482,16 @@ function Privacy() {
               No ads, no trackers and nothing sold. Your records stay on your device, and in your own account only if you
               turn on sync.
             </p>
+          </Reveal>
+          <Reveal delay={0.15}>
+            <dl className="mt-10 grid gap-x-10 gap-y-6 sm:grid-cols-2">
+              {PRIVACY_POINTS.map(({ title, text }) => (
+                <div key={title} className="border-t border-line pt-4">
+                  <dt className="font-semibold">{title}</dt>
+                  <dd className="mt-1 text-muted">{text}</dd>
+                </div>
+              ))}
+            </dl>
           </Reveal>
         </div>
       </div>
@@ -509,6 +546,9 @@ function Footer() {
           </a>
           <a href={APP_URL} className="text-muted transition hover:text-ink">
             Open in browser
+          </a>
+          <a href="#privacy" className="text-muted transition hover:text-ink">
+            Privacy
           </a>
           <a href={REPO_URL} className="text-muted transition hover:text-ink">
             GitHub
