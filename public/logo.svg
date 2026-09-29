@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <title>Kinchaku</title>
+  <!-- Full-bleed background: phones apply their own icon mask. The purse
+       stays inside the central maskable safe zone (radius ~205px). -->
+  <rect width="512" height="512" fill="#22304a"/>
+  <!-- Purse body -->
+  <path fill="#c8402f" d="M190 214C130 250 110 320 120 370c10 50 60 70 136 70s126-20 136-70c10-50-10-120-70-156z"/>
+  <!-- Frilled top above the drawstring -->
+  <path fill="#e0604c" d="M186 206c-10-20-18-40-14-58 24 12 42 2 60-6 14 12 34 12 48 0 18 8 36 18 60 6 4 18-4 38-14 58z"/>
+  <!-- Drawstring and its hanging cords -->
+  <rect x="180" y="198" width="152" height="20" rx="10" fill="#f3e9d6"/>
+  <path fill="none" stroke="#f3e9d6" stroke-width="7" stroke-linecap="round" d="M318 212c30 18 40 46 36 78M326 210c38 12 54 38 56 68"/>
+  <circle cx="354" cy="298" r="10" fill="#f3e9d6"/>
+  <circle cx="382" cy="286" r="10" fill="#f3e9d6"/>
+  <!-- Five-yen coin: brass with the centre hole -->
+  <circle cx="256" cy="336" r="58" fill="#e2b24c"/>
+  <circle cx="256" cy="336" r="46" fill="none" stroke="#b8872a" stroke-width="4"/>
+  <circle cx="256" cy="336" r="15" fill="#c8402f"/>
+</svg>
