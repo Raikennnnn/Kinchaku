@@ -19,6 +19,7 @@
   --accent: #c73b25;
   --accent-text: #b0321f;
   --positive: #15803d;
+  --caution: #b45309;
   /* Chart series, validated for colour-blind separation on each surface. */
   --chart-in: #0d9488;
   --chart-out: #c73b25;
@@ -39,6 +40,7 @@
     --line: #262a32;
     --accent-text: #f07c66;
     --positive: #4ade80;
+    --caution: #fbbf24;
     --chart-out: #e0604c;
     --brand: #1d2742;
     --brand-muted: #9ea7c0;
@@ -55,6 +57,7 @@
   --line: #262a32;
   --accent-text: #f07c66;
   --positive: #4ade80;
+  --caution: #fbbf24;
   --chart-out: #e0604c;
   --brand: #1d2742;
   --brand-muted: #9ea7c0;
@@ -81,6 +84,7 @@
   --color-accent: var(--accent);
   --color-accent-text: var(--accent-text);
   --color-positive: var(--positive);
+  --color-caution: var(--caution);
   --color-chart-in: var(--chart-in);
   --color-chart-out: var(--chart-out);
   --color-brand: var(--brand);
@@ -96,6 +100,11 @@ html,
 body {
   background: var(--bg);
   color: var(--ink);
+  /* At least as tall as the screen with Safari's toolbar tucked away. On a
+     shorter page, iPhone Safari keeps its smaller viewport and the bottom
+     tab bar floats above an empty strip. */
+  min-height: 100vh;
+  min-height: 100lvh;
 }
 
 body {

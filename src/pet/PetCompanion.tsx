@@ -1,12 +1,26 @@
-import { useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type CSSProperties, type FormEvent, type ReactNode } from "react";
 import { useLiveQuery } from "dexie-react-hooks";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { PaperPlaneRightIcon, XIcon } from "@phosphor-icons/react";
+import {
+  ArrowUpIcon,
+  CalendarDotsIcon,
+  ChartDonutIcon,
+  ChatCircleIcon,
+  CheckCircleIcon,
+  HandPalmIcon,
+  HeartbeatIcon,
+  LockSimpleIcon,
+  PiggyBankIcon,
+  ShoppingBagIcon,
+  WarningCircleIcon,
+  XIcon,
+  type Icon,
+} from "@phosphor-icons/react";
 import { getSetting, setSetting } from "../db";
 import { Sheet } from "../components/Sheet";
 import { useKeyboardFit } from "../lib/keyboard";
 import { useCurrency, useLedgerId } from "../state";
-import { answer, greeting, insights, moodFor, QUICK_QUESTIONS, type Reply } from "./brain";
+import { answer, greeting, insights, moodFor, QUICK_QUESTIONS, type Reply, type Verdict } from "./brain";
 import { loadPetContext, type PetContext } from "./context";
 import { detectLang, say, type Lang } from "./lang";
 import { PetCat, type Mood, type PetCatHandle } from "./PetCat";
@@ -14,7 +28,7 @@ import { PetCat, type Mood, type PetCatHandle } from "./PetCat";
 export type PetLangSetting = "auto" | "en" | "tl";
 export const DEFAULT_PET_NAME = "Koban";
 
-type Message = { id: number; from: "pet" | "me"; text: string };
+type Message = { id: number; from: "pet" | "me"; text: string; verdict?: Verdict };
 
 const POP = { type: "spring", stiffness: 520, damping: 30 } as const;
 
@@ -43,7 +57,15 @@ export function PetCompanion({ onHome }: { onHome: boolean }) {
   const [open, setOpen] = useState(false);
   const [hearts, setHearts] = useState(0);
   const [showBubble, setShowBubble] = useState(false);
+  const [face, setFace] = useState<Face>({ typing: false, mood: null, lang: null });
+  // Each opening gets a fresh header, so the cat drops in again.
+  const [session, setSession] = useState(0);
   const cat = useRef<PetCatHandle>(null);
+  const onFace = useCallback((f: Face) => setFace(f), []);
+  const openChat = () => {
+    setSession((n) => n + 1);
+    setOpen(true);
+  };
 
   // Let Home settle before the cat speaks; the bubble stays off other screens.
   useEffect(() => {
@@ -84,7 +106,7 @@ export function PetCompanion({ onHome }: { onHome: boolean }) {
                 transition={{ type: "spring", stiffness: 380, damping: 26 }}
                 className="pointer-events-auto relative mb-1 ml-2 max-w-[240px] origin-bottom-left rounded-2xl rounded-bl-md bg-surface p-3 pr-8 text-sm shadow-[0_12px_32px_-12px_rgb(10_14_30/0.45),inset_0_0_0_1px_var(--line)] lg:mr-2 lg:ml-0 lg:origin-bottom-right lg:rounded-br-md lg:rounded-bl-2xl"
               >
-                <button type="button" onClick={() => setOpen(true)} className="text-left">
+                <button type="button" onClick={openChat} className="text-left">
                   {bubble.text}
                 </button>
                 <button
@@ -106,7 +128,7 @@ export function PetCompanion({ onHome }: { onHome: boolean }) {
               cat.current?.jump();
               setHearts((h) => h + 1);
               if (bubble && onHome) dismiss(bubble.id);
-              setTimeout(() => setOpen(true), 220);
+              setTimeout(openChat, 220);
             }}
             aria-label={say(lang, `Talk to ${settings.name}, your budget cat`, `Kausapin si ${settings.name}, ang budget cat mo`)}
             className="pointer-events-auto rounded-full p-1 active:scale-95"
@@ -116,42 +138,71 @@ export function PetCompanion({ onHome }: { onHome: boolean }) {
         </div>
       </div>
 
-      <Sheet open={open} title={settings.name} onClose={() => setOpen(false)} fill>
-        <PetChat ctx={ctx} lang={lang} langSetting={settings.lang} name={settings.name} mood={mood} />
+      <Sheet
+        open={open}
+        title={settings.name}
+        onClose={() => {
+          setOpen(false);
+          setFace({ typing: false, mood: null, lang: null });
+        }}
+        fill
+        header={<ChatHeader key={session} name={settings.name} mood={face.mood ?? mood} typing={face.typing} lang={face.lang ?? lang} />}
+      >
+        <PetChat ctx={ctx} lang={lang} langSetting={settings.lang} name={settings.name} onFace={onFace} />
       </Sheet>
     </>
   );
 }
 
-function PetChat({ ctx, lang: startLang, langSetting, name, mood }: { ctx: PetContext; lang: Lang; langSetting: PetLangSetting; name: string; mood: Mood }) {
+type Face = { typing: boolean; mood: Mood | null; lang: Lang | null };
+
+function PetChat({
+  ctx,
+  lang: startLang,
+  langSetting,
+  name,
+  onFace,
+}: {
+  ctx: PetContext;
+  lang: Lang;
+  langSetting: PetLangSetting;
+  name: string;
+  onFace: (face: Face) => void;
+}) {
   const currency = useCurrency();
   const reduce = useReducedMotion();
   const keyboard = useKeyboardFit(true);
   const [lang, setLang] = useState<Lang>(startLang);
   const [messages, setMessages] = useState<Message[]>([]);
-  // Id the next pet message will take while its typing dots show.
+  // Id the next pet message will take while its typing paws show.
   const [typing, setTyping] = useState<number | null>(null);
   const [draft, setDraft] = useState("");
   const [expectAmount, setExpectAmount] = useState(false);
   const [replyMood, setReplyMood] = useState<Mood | null>(null);
   const nextId = useRef(0);
   const log = useRef<HTMLDivElement>(null);
+  const box = useRef<HTMLTextAreaElement>(null);
   const queue = useRef(Promise.resolve());
   const greeted = useRef(false);
   const ctxRef = useRef(ctx);
   ctxRef.current = ctx;
+
+  // The header (drawn by the sheet) shows the cat's face and whether it's typing.
+  useEffect(() => {
+    onFace({ typing: typing !== null, mood: replyMood, lang });
+  }, [typing, replyMood, lang, onFace]);
 
   // The cat "types" each line with a short pause, one after another. Ids are
   // taken outside the state updaters, which React may run twice.
   function speak(reply: Reply, wait = 0) {
     queue.current = queue.current.then(async () => {
       if (wait) await new Promise((r) => setTimeout(r, wait));
-      for (const text of reply.messages) {
+      for (const [i, text] of reply.messages.entries()) {
         const id = nextId.current++;
         setTyping(id);
         await new Promise((r) => setTimeout(r, Math.min(900, 300 + text.length * 5)));
         setTyping(null);
-        setMessages((m) => [...m, { id, from: "pet", text }]);
+        setMessages((m) => [...m, { id, from: "pet", text, verdict: i === 0 ? reply.verdict : undefined }]);
       }
       if (reply.mood) setReplyMood(reply.mood);
       setExpectAmount(!!reply.expectAmount);
@@ -167,8 +218,8 @@ function PetChat({ ctx, lang: startLang, langSetting, name, mood }: { ctx: PetCo
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Keep the newest message in view. Only the message list scrolls; the cat
-  // and the input stay put.
+  // Keep the newest message in view. Only the message list scrolls; the
+  // header and the message box stay put.
   useEffect(() => {
     const el = log.current;
     el?.scrollTo({ top: el.scrollHeight, behavior: reduce ? "auto" : "smooth" });
@@ -187,12 +238,21 @@ function PetChat({ ctx, lang: startLang, langSetting, name, mood }: { ctx: PetCo
     return () => observer.disconnect();
   }, []);
 
+  // The message box grows with what's typed, up to a few lines.
+  const fitBox = () => {
+    const el = box.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 128)}px`;
+  };
+
   function send(text: string) {
     const clean = text.trim().slice(0, 300);
     if (!clean) return;
     const id = nextId.current++;
     setMessages((m) => [...m, { id, from: "me", text: clean }]);
     setDraft("");
+    requestAnimationFrame(fitBox);
     // Reply in the language the question was asked in (unless a language is fixed in Settings).
     let replyLang = lang;
     if (langSetting === "auto") {
@@ -207,136 +267,277 @@ function PetChat({ ctx, lang: startLang, langSetting, name, mood }: { ctx: PetCo
     speak(answer(clean, current, insights(current, replyLang, currency), replyLang, name, currency, expectAmount));
   }
 
-  const faceMood = replyMood ?? mood;
+  // A cat face sits beside the last message of each run of the cat's messages.
+  const lastInRun = (i: number) => messages[i + 1]?.from !== "pet" && !(i === messages.length - 1 && typing !== null);
 
   return (
     <>
-      {/* Folds away while the phone keyboard is open, to leave room for the messages. */}
-      <motion.div
-        initial={false}
-        animate={keyboard ? { height: 0, opacity: 0 } : { height: "auto", opacity: 1 }}
-        transition={{ duration: reduce ? 0 : 0.2 }}
-        className="flex shrink-0 items-center gap-3"
-        style={{ overflow: keyboard ? "hidden" : "visible" }}
-      >
-        <CatLanding reduce={!!reduce}>
-          {/* Tilts its head while it "types". */}
-          <motion.div
-            animate={typing !== null && !reduce ? { rotate: [0, -7, 0, 5, 0] } : { rotate: 0 }}
-            transition={typing !== null ? { duration: 1.4, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }}
-            style={{ transformOrigin: "50% 80%" }}
-          >
-            <PetCat mood={faceMood} size={60} label={`${name} (${faceMood})`} />
-          </motion.div>
-        </CatLanding>
-        <motion.p
-          initial={{ opacity: 0, x: -8 }}
-          animate={{ opacity: 1, x: 0 }}
-          transition={{ duration: 0.4, delay: reduce ? 0 : 0.45 }}
-          className="text-sm text-muted"
+      <div className="relative -mx-5 min-h-0 flex-1 lg:-mx-7">
+        <KobanPattern />
+        {/* layoutScroll lets bubbles grow from the right place while the list scrolls. */}
+        <motion.div
+          ref={log}
+          layoutScroll
+          className="relative h-full space-y-1.5 overflow-y-auto overscroll-contain px-4 py-4 [mask-image:linear-gradient(to_bottom,transparent,#000_16px,#000_calc(100%-16px),transparent)] lg:px-6"
+          role="log"
+          aria-live="polite"
+          aria-label={say(lang, "Chat", "Usapan")}
         >
-          {say(lang, "Your budget cat. Everything stays on this device.", "Ang budget cat mo. Nasa device mo lang ang lahat.")}
-        </motion.p>
-      </motion.div>
-
-      {/* layoutScroll lets the bubbles grow from the right place while the list scrolls. */}
-      <motion.div
-        ref={log}
-        layoutScroll
-        className="-mx-5 mt-3 min-h-0 flex-1 space-y-2 overflow-y-auto overscroll-contain px-5 py-3 [mask-image:linear-gradient(to_bottom,transparent,#000_14px,#000_calc(100%-14px),transparent)] lg:-mx-7 lg:px-7"
-        role="log"
-        aria-live="polite"
-        aria-label={say(lang, "Chat", "Usapan")}
-      >
-        {messages.map((m) =>
-          m.from === "pet" ? (
-            <div key={m.id} className="flex justify-start">
-              {/* Grows out of the typing bubble that shared its id. */}
-              <motion.p
-                layoutId={`pet-${m.id}`}
-                transition={{ layout: POP }}
-                style={PET_RADIUS}
-                className="max-w-[85%] bg-surface px-3.5 py-2.5 text-[15px] leading-snug shadow-[inset_0_0_0_1px_var(--line)]"
-              >
-                <motion.span layout initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.2, delay: 0.08 }} className="block">
+          <p className="mx-auto mb-3 flex w-fit items-center gap-1.5 rounded-full bg-surface/80 px-3 py-1 text-xs text-muted shadow-[inset_0_0_0_1px_var(--line)] backdrop-blur-sm">
+            <LockSimpleIcon size={12} weight="bold" aria-hidden="true" />
+            {say(lang, `${name} only reads your entries on this device`, `Sa device mo lang binabasa ni ${name} ang mga entry mo`)}
+          </p>
+          {messages.map((m, i) =>
+            m.from === "pet" ? (
+              <div key={m.id} className={`flex items-end gap-2 ${lastInRun(i) ? "pb-2" : ""}`}>
+                {lastInRun(i) ? <CatFace /> : <span className="w-7 shrink-0" aria-hidden="true" />}
+                {/* Grows out of the typing bubble that shared its id. */}
+                <motion.p
+                  layoutId={`pet-${m.id}`}
+                  transition={{ layout: POP }}
+                  style={m.verdict ? { ...PET_RADIUS, ...verdictLook(m.verdict) } : PET_RADIUS}
+                  className={`max-w-[80%] px-3.5 py-2.5 text-[15px] leading-snug ${
+                    m.verdict ? "font-semibold" : "bg-surface shadow-[inset_0_0_0_1px_var(--line),0_1px_2px_rgb(10_14_30/0.06)]"
+                  }`}
+                >
+                  <motion.span
+                    layout
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2, delay: 0.08 }}
+                    className="flex items-center gap-2"
+                  >
+                    {m.verdict && <VerdictIcon verdict={m.verdict} />}
+                    <span>{m.text}</span>
+                  </motion.span>
+                </motion.p>
+              </div>
+            ) : (
+              <div key={m.id} className="flex justify-end pb-2 pl-10">
+                <motion.p
+                  initial={{ opacity: 0, scale: 0.6, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={POP}
+                  style={MY_RADIUS}
+                  className="origin-bottom-right bg-accent px-3.5 py-2.5 text-[15px] leading-snug text-white shadow-[0_6px_16px_-8px_rgb(199_59_37/0.7)]"
+                >
                   {m.text}
-                </motion.span>
-              </motion.p>
-            </div>
-          ) : (
-            <div key={m.id} className="flex justify-end">
-              <motion.p
-                initial={{ opacity: 0, scale: 0.6, y: 8 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
+                </motion.p>
+              </div>
+            ),
+          )}
+          {typing !== null && (
+            <div className="flex items-end gap-2" role="status" aria-label={say(lang, `${name} is typing`, `Nagta-type si ${name}`)}>
+              <CatFace />
+              <motion.span
+                layoutId={`pet-${typing}`}
+                initial={{ opacity: 0, scale: 0.5 }}
+                animate={{ opacity: 1, scale: 1 }}
                 transition={POP}
-                style={MY_RADIUS}
-                className="max-w-[85%] origin-bottom-right bg-ink px-3.5 py-2.5 text-[15px] leading-snug text-bg"
+                style={PET_RADIUS}
+                className="flex origin-bottom-left items-end gap-1.5 bg-surface px-3.5 py-2.5 shadow-[inset_0_0_0_1px_var(--line)]"
               >
-                {m.text}
-              </motion.p>
+                <PawSteps reduce={!!reduce} />
+              </motion.span>
             </div>
-          ),
-        )}
-        {typing !== null && (
-          <div className="flex justify-start" role="status" aria-label={say(lang, `${name} is typing`, `Nagta-type si ${name}`)}>
-            <motion.span
-              layoutId={`pet-${typing}`}
-              initial={{ opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={POP}
-              style={PET_RADIUS}
-              className="flex origin-bottom-left items-end gap-1.5 bg-surface px-3.5 py-2.5 shadow-[inset_0_0_0_1px_var(--line)]"
-            >
-              <PawSteps reduce={!!reduce} />
-            </motion.span>
-          </div>
-        )}
-      </motion.div>
+          )}
+        </motion.div>
+      </div>
 
-      <div className="shrink-0 pt-2">
-        <div className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-3 [scrollbar-width:none] lg:-mx-7 lg:px-7" role="group" aria-label={say(lang, "Quick questions", "Mabilisang tanong")}>
-          {QUICK_QUESTIONS[lang].map((q, i) => (
-            <motion.button
-              key={q}
-              type="button"
-              onClick={() => send(q)}
-              initial={{ opacity: 0, y: 14 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ type: "spring", stiffness: 420, damping: 26, delay: reduce ? 0 : 0.35 + i * 0.06 }}
-              className="shrink-0 rounded-full bg-surface px-3.5 py-2 text-sm whitespace-nowrap shadow-[inset_0_0_0_1px_var(--line)] transition-colors hover:bg-surface-2 active:scale-95"
+      <div className="shrink-0 pt-3">
+        {/* Quick questions step aside while typing, to leave room for the messages. */}
+        <AnimatePresence initial={false}>
+          {!keyboard && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: reduce ? 0 : 0.2 }}
+              className="overflow-hidden"
             >
-              {q}
-            </motion.button>
-          ))}
-        </div>
+              <div
+                className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-3 [scrollbar-width:none] lg:-mx-7 lg:px-7"
+                role="group"
+                aria-label={say(lang, "Quick questions", "Mabilisang tanong")}
+              >
+                {QUICK_QUESTIONS[lang].map((q, i) => {
+                  const Glyph = QUICK_ICONS[i] ?? ChatCircleIcon;
+                  return (
+                    <motion.button
+                      key={q}
+                      type="button"
+                      onClick={() => send(q)}
+                      initial={{ opacity: 0, y: 14 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ type: "spring", stiffness: 420, damping: 26, delay: reduce ? 0 : 0.35 + i * 0.06 }}
+                      className="flex shrink-0 items-center gap-1.5 rounded-full bg-surface py-2 pr-3.5 pl-3 text-sm whitespace-nowrap shadow-[inset_0_0_0_1px_var(--line)] transition-colors hover:bg-surface-2 active:scale-95"
+                    >
+                      <Glyph size={16} weight="duotone" className="text-accent-text" aria-hidden="true" />
+                      {q}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <form
           onSubmit={(e: FormEvent) => {
             e.preventDefault();
             send(draft);
           }}
-          className="flex items-center gap-2"
+          className="flex items-end gap-2 rounded-[26px] bg-surface p-1.5 pl-4 shadow-[inset_0_0_0_1px_var(--line)] transition-shadow focus-within:shadow-[inset_0_0_0_1.5px_var(--accent)]"
         >
-          <input
+          {/* A text area rather than a text field: iPhones then skip their password and card bar. */}
+          <textarea
+            ref={box}
+            rows={1}
             value={draft}
-            onChange={(e) => setDraft(e.target.value)}
+            onChange={(e) => {
+              setDraft(e.target.value);
+              fitBox();
+            }}
+            onKeyDown={(e) => {
+              // Enter sends; Shift+Enter starts a new line.
+              if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+                e.preventDefault();
+                send(draft);
+              }
+            }}
             maxLength={300}
-            placeholder={expectAmount ? say(lang, "How much? e.g. 2500", "Magkano? hal. 2500") : say(lang, `Ask ${name} anything about your money`, `Magtanong kay ${name} tungkol sa pera mo`)}
+            placeholder={expectAmount ? say(lang, "How much? e.g. 2500", "Magkano? hal. 2500") : say(lang, `Message ${name}`, `Mensahe kay ${name}`)}
             autoComplete="off"
             enterKeyHint="send"
-            className="field flex-1 rounded-full"
+            className="max-h-32 min-h-10 flex-1 resize-none bg-transparent py-2 text-base leading-6 placeholder:text-muted focus-visible:outline-none"
             aria-label={say(lang, "Message", "Mensahe")}
           />
-          <button
+          <motion.button
             type="submit"
             disabled={!draft.trim()}
+            animate={{ scale: draft.trim() ? 1 : 0.88 }}
+            transition={POP}
             aria-label={say(lang, "Send", "Ipadala")}
-            className="grid size-11 shrink-0 place-items-center rounded-full bg-accent text-white transition active:scale-90 disabled:opacity-50"
+            className="grid size-10 shrink-0 place-items-center rounded-full bg-accent text-white transition-colors disabled:bg-surface-2 disabled:text-muted"
           >
-            <PaperPlaneRightIcon size={18} weight="fill" />
-          </button>
+            <ArrowUpIcon size={18} weight="bold" />
+          </motion.button>
         </form>
       </div>
     </>
+  );
+}
+
+const QUICK_ICONS: Icon[] = [ShoppingBagIcon, CalendarDotsIcon, ChartDonutIcon, HeartbeatIcon, PiggyBankIcon];
+
+const VERDICT_COLOR: Record<Verdict, string> = { ok: "var(--positive)", tight: "var(--caution)", wait: "var(--accent-text)" };
+
+/** A verdict bubble takes its colour: green for yes, amber for tight, red for wait. */
+const verdictLook = (v: Verdict): CSSProperties => ({
+  color: VERDICT_COLOR[v],
+  background: `color-mix(in oklab, ${VERDICT_COLOR[v]} 13%, var(--surface))`,
+  boxShadow: `inset 0 0 0 1px color-mix(in oklab, ${VERDICT_COLOR[v]} 38%, transparent)`,
+});
+
+function VerdictIcon({ verdict }: { verdict: Verdict }) {
+  const Glyph = verdict === "ok" ? CheckCircleIcon : verdict === "tight" ? WarningCircleIcon : HandPalmIcon;
+  return <Glyph size={20} weight="fill" className="shrink-0" aria-hidden="true" />;
+}
+
+const MOOD_LINE: Record<Mood, [string, string]> = {
+  happy: ["Happy with how you're doing", "Masaya sa lagay mo"],
+  excited: ["Excited for you", "Excited para sa'yo"],
+  okay: ["Here to help with your money", "Nandito para sa pera mo"],
+  worried: ["Keeping an eye on your spending", "Binabantayan ang gastos mo"],
+  sleepy: ["Sleepy, but still listening", "Inaantok, pero nakikinig pa"],
+};
+
+const MOOD_RING: Record<Mood, string> = {
+  happy: "var(--positive)",
+  excited: "var(--caution)",
+  okay: "var(--muted)",
+  worried: "var(--accent)",
+  sleepy: "#6366f1",
+};
+
+/** Chat header: the cat as an avatar (it drops in on opening), its name, and what it's up to. */
+function ChatHeader({ name, mood, typing, lang }: { name: string; mood: Mood; typing: boolean; lang: Lang }) {
+  const reduce = !!useReducedMotion();
+  const ring = MOOD_RING[mood];
+  const status = typing ? say(lang, "typing…", "nagta-type…") : say(lang, ...MOOD_LINE[mood]);
+  return (
+    <div className="flex items-center gap-3">
+      <div
+        className="grid size-13 shrink-0 place-items-center rounded-full transition-[background,box-shadow] duration-500"
+        style={{
+          background: `color-mix(in oklab, ${ring} 14%, var(--surface))`,
+          boxShadow: `inset 0 0 0 2px color-mix(in oklab, ${ring} 50%, transparent)`,
+        }}
+      >
+        <CatLanding reduce={reduce}>
+          {/* Tilts its head while it "types". */}
+          <motion.div
+            animate={typing && !reduce ? { rotate: [0, -7, 0, 5, 0] } : { rotate: 0 }}
+            transition={typing ? { duration: 1.4, repeat: Infinity, ease: "easeInOut" } : { duration: 0.3 }}
+            style={{ transformOrigin: "50% 80%" }}
+          >
+            <PetCat mood={mood} size={40} label={`${name} (${mood})`} />
+          </motion.div>
+        </CatLanding>
+      </div>
+      <div className="min-w-0">
+        <h2 className="font-display text-xl leading-tight font-semibold">{name}</h2>
+        <AnimatePresence mode="wait" initial={false}>
+          <motion.p
+            key={status}
+            initial={{ opacity: 0, y: 4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.18 }}
+            className={`truncate text-sm ${typing ? "text-accent-text" : "text-muted"}`}
+          >
+            {status}
+          </motion.p>
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+}
+
+/** Small still face beside the cat's messages (the full animated cat would be too busy in a long chat). */
+function CatFace() {
+  return (
+    <svg viewBox="0 0 32 32" className="mb-0.5 size-7 shrink-0" aria-hidden="true">
+      <circle cx="16" cy="16" r="16" fill="var(--surface-2)" />
+      <path d="M7.5 14 L9 5.5 L14.5 10.5 Z" fill="#fbf6ee" stroke="#2b2622" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M24.5 14 L23 5.5 L17.5 10.5 Z" fill="#fbf6ee" stroke="#2b2622" strokeWidth="1.3" strokeLinejoin="round" />
+      <path d="M9.6 10.4 L10.2 7.6 L12.4 9.8 Z" fill="#f4a9a0" />
+      <path d="M22.4 10.4 L21.8 7.6 L19.6 9.8 Z" fill="#f4a9a0" />
+      <ellipse cx="16" cy="17.5" rx="9.5" ry="8" fill="#fbf6ee" stroke="#2b2622" strokeWidth="1.3" />
+      <path d="M10.8 17 q1.6 1.4 3.2 0 M18 17 q1.6 1.4 3.2 0" fill="none" stroke="#2b2622" strokeWidth="1.2" strokeLinecap="round" />
+      <ellipse cx="10.6" cy="20" rx="1.6" ry="1" fill="#f4a9a0" opacity="0.8" />
+      <ellipse cx="21.4" cy="20" rx="1.6" ry="1" fill="#f4a9a0" opacity="0.8" />
+      <path d="M15.1 19.6 h1.8 l-0.9 0.9 Z" fill="#e0776a" />
+    </svg>
+  );
+}
+
+/** Faint koban (old oval gold coins) behind the conversation. */
+function KobanPattern() {
+  return (
+    <svg className="pointer-events-none absolute inset-0 size-full" aria-hidden="true">
+      <defs>
+        <pattern id="koban-pattern" width="56" height="56" patternUnits="userSpaceOnUse" patternTransform="rotate(-18)">
+          <g fill="none" stroke="var(--line)" strokeWidth="1.3" strokeLinecap="round">
+            <ellipse cx="14" cy="14" rx="6" ry="9" />
+            <path d="M10.5 10 h7 M10 14 h8 M10.5 18 h7" opacity="0.8" />
+            <ellipse cx="42" cy="42" rx="6" ry="9" />
+            <path d="M38.5 38 h7 M38 42 h8 M38.5 46 h7" opacity="0.8" />
+          </g>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill="url(#koban-pattern)" />
+    </svg>
   );
 }
 

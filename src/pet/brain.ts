@@ -236,7 +236,9 @@ export function moodFor(ctx: PetContext, list: Insight[]): Mood {
 
 /* ---------- Conversation ---------- */
 
-export type Reply = { messages: string[]; mood?: Mood; expectAmount?: boolean };
+export type Verdict = "ok" | "tight" | "wait";
+/** `verdict` marks the first message as a "can I afford it?" verdict. */
+export type Reply = { messages: string[]; mood?: Mood; expectAmount?: boolean; verdict?: Verdict };
 
 export const QUICK_QUESTIONS: Record<Lang, string[]> = {
   en: ["Can I afford something?", "How much can I spend a day?", "Where does my money go?", "How am I doing?", "Tips to save"],
@@ -573,7 +575,7 @@ function afford(ctx: PetContext, price: number | null, category: string | null, 
       lines.push(say(lang, `Buying it would take you to ${fmt(price - ctx.balance)} in the negative.`, `Kapag binili mo 'yan, magiging negative ka nang ${fmt(price - ctx.balance)}.`));
     }
     lines.push(alternative(ctx, price, lang, currency));
-    return { messages: lines, mood: "worried" };
+    return { messages: lines, mood: "worried", verdict: "wait" };
   }
   if (price === null) return { messages: [say(lang, "How much is it?", "Magkano 'yan?")], expectAmount: true };
 
@@ -638,7 +640,7 @@ function afford(ctx: PetContext, price: number | null, category: string | null, 
     lines.push(say(lang, "Go for it, and log it after so I can keep track.", "Go lang! I-log mo lang pagkatapos para ma-track ko."));
   }
 
-  return { messages: lines, mood: verdict === "ok" ? "happy" : "worried" };
+  return { messages: lines, mood: verdict === "ok" ? "happy" : "worried", verdict };
 }
 
 function categorySpend(ctx: PetContext, id: string, period: Period, lang: Lang, currency: string): Reply {

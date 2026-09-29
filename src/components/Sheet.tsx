@@ -11,6 +11,8 @@ type Props = {
   children: ReactNode;
   /** Fixed height, and the content scrolls itself (e.g. a chat with its input pinned at the bottom). */
   fill?: boolean;
+  /** Replaces the plain title in the header (it still names the dialog). */
+  header?: ReactNode;
 };
 
 /**
@@ -19,7 +21,7 @@ type Props = {
  * scales in centred on desktop. It animates out before actually closing.
  * Mark the field that should get focus with data-autofocus.
  */
-export function Sheet({ open, title, onClose, children, fill = false }: Props) {
+export function Sheet({ open, title, onClose, children, fill = false, header }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   const controls = useAnimationControls();
@@ -76,7 +78,21 @@ export function Sheet({ open, title, onClose, children, fill = false }: Props) {
       ref={ref}
       className="sheet"
       aria-labelledby={titleId}
-      style={keyboard ? { marginBottom: keyboard.inset, maxHeight: keyboard.height } : undefined}
+      // Keyboard open: the dialog covers exactly the visible area and the panel sits at its bottom.
+      style={
+        keyboard
+          ? {
+              top: keyboard.top,
+              bottom: "auto",
+              height: keyboard.height,
+              maxHeight: keyboard.height,
+              margin: "0 auto",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "flex-end",
+            }
+          : undefined
+      }
       // React passes these events up to parent components, so a sheet opened on
       // top of this one (e.g. New category over New expense) would close both.
       // Only react to events from this dialog itself.
@@ -115,10 +131,16 @@ export function Sheet({ open, title, onClose, children, fill = false }: Props) {
         {/* Drag area on phones: the grab handle and the title bar. */}
         <div onPointerDown={(e) => !desktop && drag.start(e)} className="shrink-0 touch-none pt-3 lg:pt-0">
           <div className="mx-auto mb-3 h-1.5 w-11 rounded-full bg-line lg:hidden" aria-hidden="true" />
-          <header className="mb-5 flex items-center justify-between">
-            <h2 id={titleId} className="font-display text-[1.6rem] leading-tight font-semibold">
-              {title}
-            </h2>
+          <header className={`${header ? "mb-3" : "mb-5"} flex items-center justify-between gap-3`}>
+            {header ? (
+              <div id={titleId} className="min-w-0 flex-1">
+                {header}
+              </div>
+            ) : (
+              <h2 id={titleId} className="font-display text-[1.6rem] leading-tight font-semibold">
+                {title}
+              </h2>
+            )}
             <button
               type="button"
               onClick={() => void requestClose()}

@@ -13,7 +13,7 @@ export function More({ onNavigate, onOpenSettings }: { onNavigate: (v: View) => 
         {MORE_ITEMS.map(({ view, label, hint, icon }) => (
           <Row key={view} icon={icon} label={label} hint={hint} onClick={() => onNavigate(view)} />
         ))}
-        <Row icon={GearSixIcon} label="Settings" hint="Appearance, currency" onClick={onOpenSettings} />
+        <Row icon={GearSixIcon} label="Settings" hint="Account, appearance, currency" onClick={onOpenSettings} />
       </Stagger>
     </Screen>
   );
