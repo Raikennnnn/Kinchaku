@@ -4,6 +4,8 @@ import { ArrowUpRightIcon, CaretRightIcon } from "@phosphor-icons/react";
 import { getSetting, setCurrency, setSetting } from "../db";
 import { DEFAULT_PET_NAME, type PetLangSetting } from "../pet/PetCompanion";
 import { PetCat } from "../pet/PetCat";
+import { AccountSection } from "../sync/AccountSection";
+import { syncConfigured } from "../sync/config";
 import { CurrencyPicker } from "./CurrencyPicker";
 import { Sheet } from "./Sheet";
 import { ThemeSegmented } from "./ThemeToggle";
@@ -47,6 +49,7 @@ export function SettingsSheet({ open, currency, onClose, onOpenCategories }: Pro
         </>
       ) : (
         <>
+          <AccountSection />
           <h3 className="mb-2 text-sm font-medium text-muted">Appearance</h3>
           <ThemeSegmented />
 
@@ -70,7 +73,9 @@ export function SettingsSheet({ open, currency, onClose, onOpenCategories }: Pro
             </a>
           </div>
           <p className="mt-6 text-sm text-muted">
-            Your data is saved on this device and works offline. Signing in to sync between devices is on the way.
+            {syncConfigured
+              ? "Your data is saved on this device first, so it works offline. Signed in, it also syncs to your account."
+              : "Your data is saved on this device and works offline."}
           </p>
         </>
       )}

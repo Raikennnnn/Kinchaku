@@ -47,6 +47,9 @@ export default defineConfig({
       workbox: {
         // Cache both pages and their assets so the app opens with no connection.
         globPatterns: ["**/*.{js,css,html,svg,png,ico,webmanifest,woff2}"],
+        // Google sign-in pages come from Firebase through /__/auth/ (see
+        // vercel.json); they must reach the network, not the cached site.
+        navigateFallbackDenylist: [/^\/__\//],
       },
     }),
   ],

@@ -5,6 +5,7 @@ import { getActiveLedgerId } from "./data/ledgers";
 import { runDueRecurring } from "./data/recurring";
 import { getCurrency } from "./db";
 import { AppStateProvider } from "./state";
+import { bootSync } from "./sync/client";
 import { AppShell, type View } from "./components/AppShell";
 import { EASE_OUT } from "./components/motion";
 import { SettingsSheet } from "./components/SettingsSheet";
@@ -30,6 +31,11 @@ export default function App() {
 
   // Add repeating entries that came due while the app was closed, and again
   // whenever it comes back to the foreground (it may have been open overnight).
+  // Signed in on this device: start syncing with the account.
+  useEffect(() => {
+    void bootSync();
+  }, []);
+
   useEffect(() => {
     void runDueRecurring();
     const onVisible = () => {

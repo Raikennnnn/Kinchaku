@@ -14,7 +14,14 @@ export type IconRef =
  * and deletes are flags because a hard-deleted record would come back from a
  * device that was offline when it was removed.
  */
-export type SyncFields = { id: string; createdAt: number; updatedAt: number; deleted: boolean };
+export type SyncFields = {
+  id: string;
+  createdAt: number;
+  updatedAt: number;
+  deleted: boolean;
+  /** 1 while this device has a change the account hasn't received yet (see sync/). */
+  _dirty?: 0 | 1;
+};
 
 /** A separate book of money, e.g. Personal and Business. Categories are shared. */
 export type Ledger = SyncFields & { name: string; icon: PresetIconName; color: string; order: number };
@@ -117,7 +124,7 @@ export type GoalDeposit = SyncFields & {
   transactionId: string | null;
 };
 
-type Setting = { key: string; value: unknown; updatedAt: number };
+type Setting = { key: string; value: unknown; updatedAt: number; _dirty?: 0 | 1 };
 
 export const db = new Dexie("kinchaku") as Dexie & {
   ledgers: EntityTable<Ledger, "id">;
@@ -132,6 +139,23 @@ export const db = new Dexie("kinchaku") as Dexie & {
   settings: EntityTable<Setting, "key">;
 };
 
+/** Tables whose records sync with the account. */
+export const SYNCED_TABLES = [
+  "ledgers",
+  "categories",
+  "accounts",
+  "transactions",
+  "transfers",
+  "budgets",
+  "recurring",
+  "goals",
+  "goalDeposits",
+] as const;
+export type SyncedTable = (typeof SYNCED_TABLES)[number];
+
+/** Settings that follow the account; the rest (active ledger, reminders dismissed…) stay per device. */
+export const SYNCED_SETTINGS = ["currency", "petName", "petLang", "petHidden"];
+
 export const DEFAULT_LEDGER_ID = "personal";
 export const DEFAULT_ACCOUNT_ID = "cash-personal";
 
@@ -144,8 +168,9 @@ function defaultCategory(c: (typeof DEFAULT_CATEGORIES)[number], order: number, 
     order,
     builtIn: true,
     createdAt: now,
-    updatedAt: now,
+    updatedAt: 0,
     deleted: false,
+    _dirty: 1,
   };
 }
 
@@ -156,8 +181,9 @@ const defaultLedger = (now: number): Ledger => ({
   color: "#6366f1",
   order: 0,
   createdAt: now,
-  updatedAt: now,
+  updatedAt: 0,
   deleted: false,
+  _dirty: 1,
 });
 
 const defaultAccount = (now: number): Account => ({
@@ -170,8 +196,9 @@ const defaultAccount = (now: number): Account => ({
   opening: 0,
   order: 0,
   createdAt: now,
-  updatedAt: now,
+  updatedAt: 0,
   deleted: false,
+  _dirty: 1,
 });
 
 db.version(1).stores({
@@ -247,6 +274,36 @@ db.on("populate", (tx) => {
   tx.table("accounts").add(defaultAccount(now));
 });
 
+// v5: sync with an account. Each record notes whether it has a change the
+// account hasn't received yet. Built-in records nobody has edited count as
+// never edited (updatedAt 0), so a new device's defaults never overwrite
+// edits made on another one.
+db.version(5)
+  .stores({
+    ledgers: "id, order, _dirty",
+    categories: "id, order, _dirty",
+    accounts: "id, ledgerId, order, _dirty",
+    transactions: "id, [ledgerId+date], categoryId, accountId, recurringId, _dirty",
+    transfers: "id, [ledgerId+date], fromId, toId, _dirty",
+    budgets: "id, ledgerId, _dirty",
+    recurring: "id, ledgerId, _dirty",
+    goals: "id, ledgerId, _dirty",
+    goalDeposits: "id, goalId, ledgerId, _dirty",
+    settings: "key, _dirty",
+  })
+  .upgrade(async (tx) => {
+    for (const name of SYNCED_TABLES) {
+      await tx.table(name).toCollection().modify((r: SyncFields & { builtIn?: boolean }) => {
+        const isDefault = r.builtIn || r.id === DEFAULT_LEDGER_ID || r.id === DEFAULT_ACCOUNT_ID;
+        if (isDefault && r.createdAt === r.updatedAt) r.updatedAt = 0;
+        r._dirty = 1;
+      });
+    }
+    await tx.table("settings").toCollection().modify((s: Setting) => {
+      if (SYNCED_SETTINGS.includes(s.key)) s._dirty = 1;
+    });
+  });
+
 /** Fresh sync fields for a new record. */
 export function stamp(id: string = crypto.randomUUID()) {
   const now = Date.now();
@@ -268,3 +325,49 @@ export async function getCurrency(): Promise<string | null> {
 }
 
 export const setCurrency = (code: string) => setSetting("currency", code);
+
+/* ---------- Change tracking for sync ---------- */
+
+// Writes made by the sync itself run in a transaction carrying this mark, so
+// changes that came from the account aren't sent straight back to it.
+const FROM_SYNC = Symbol("fromSync");
+
+/** Runs `fn` in a read-write transaction whose writes don't count as local changes. */
+export function syncTransaction<T>(tables: string[], fn: () => Promise<T>): Promise<T> {
+  return db.transaction("rw", tables, (tx) => {
+    (tx as unknown as Record<symbol, boolean>)[FROM_SYNC] = true;
+    return fn();
+  });
+}
+
+// Upgrades and first-run setup aren't user edits either; they set their own marks.
+const fromSync = (tx: unknown) => {
+  const t = tx as { mode?: string; idbtrans?: IDBTransaction } | undefined;
+  if (t?.mode === "versionchange" || t?.idbtrans?.mode === "versionchange") return true;
+  for (let t = tx as { parent?: unknown } | undefined; t; t = t.parent as typeof t) {
+    if ((t as unknown as Record<symbol, boolean>)[FROM_SYNC]) return true;
+  }
+  return false;
+};
+
+// Every local write marks its record as unsynced and, if the caller didn't,
+// stamps updatedAt: the newer edit wins when devices meet.
+for (const name of SYNCED_TABLES) {
+  const table = db.table<SyncFields, string>(name);
+  table.hook("creating", (_key, obj, tx) => {
+    if (fromSync(tx)) return;
+    obj._dirty = 1;
+    obj.updatedAt ??= Date.now();
+  });
+  table.hook("updating", (mods, _key, _obj, tx) => {
+    if (fromSync(tx)) return undefined;
+    return "updatedAt" in mods ? { _dirty: 1 } : { _dirty: 1, updatedAt: Date.now() };
+  });
+}
+db.settings.hook("creating", (_key, obj, tx) => {
+  if (!fromSync(tx) && SYNCED_SETTINGS.includes(obj.key)) obj._dirty = 1;
+});
+db.settings.hook("updating", (_mods, _key, obj, tx) => {
+  if (!fromSync(tx) && SYNCED_SETTINGS.includes(obj.key)) return { _dirty: 1 };
+  return undefined;
+});

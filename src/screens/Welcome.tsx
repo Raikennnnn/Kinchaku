@@ -1,9 +1,12 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AnimatePresence, motion, type Variants } from "motion/react";
 import { ArrowLeftIcon, ArrowRightIcon, ArrowsClockwiseIcon, ChartDonutIcon, CloudSlashIcon } from "@phosphor-icons/react";
 import { setCurrency } from "../db";
 import { CurrencyPicker } from "../components/CurrencyPicker";
 import { EASE_OUT, RevealWords } from "../components/motion";
+import { AuthSheet } from "../sync/AuthSheet";
+import { syncConfigured } from "../sync/config";
+import { useSyncStatus } from "../sync/store";
 
 const POINTS = [
   { icon: ChartDonutIcon, title: "See where it goes", text: "Every expense sorted by category, month by month." },
@@ -23,11 +26,20 @@ const item: Variants = {
 
 /**
  * First run, before anything else: a short introduction, then the one thing
- * the app needs, a currency. Sign-in joins this flow when sync arrives.
+ * the app needs, a currency. Someone with an account can sign in instead;
+ * their currency and entries then come from the account.
  */
 export function Welcome() {
   const [stage, setStage] = useState<"intro" | "currency">("intro");
+  const [signingIn, setSigningIn] = useState(false);
+  const sync = useSyncStatus();
   const dir = stage === "currency" ? 1 : -1;
+
+  // Signed in: move on. If the account already has a currency, the app opens
+  // as soon as it arrives; a new account picks one here.
+  useEffect(() => {
+    if (sync.user) setStage("currency");
+  }, [sync.user]);
 
   return (
     <main className="mx-auto grid min-h-dvh max-w-5xl grid-cols-1 content-start gap-6 overflow-x-clip px-4 pt-[max(env(safe-area-inset-top),1rem)] pb-[calc(env(safe-area-inset-bottom)+2rem)] lg:grid-cols-2 lg:content-center lg:gap-14 lg:px-10 lg:py-16">
@@ -69,6 +81,15 @@ export function Welcome() {
                     className="transition-transform group-hover:translate-x-0.5"
                   />
                 </button>
+                {syncConfigured && (
+                  <button
+                    type="button"
+                    onClick={() => setSigningIn(true)}
+                    className="mt-3 block w-full rounded-full px-4 py-2.5 text-center font-medium text-muted transition hover:text-ink sm:inline-block sm:w-auto"
+                  >
+                    I already have an account
+                  </button>
+                )}
               </motion.div>
             </motion.section>
           ) : (
@@ -93,7 +114,11 @@ export function Welcome() {
                 <h2 id="currency-heading" className="mt-3 font-display text-3xl font-semibold">
                   Which currency do you spend in?
                 </h2>
-                <p className="mt-2 mb-5 text-muted">You can change this later in Settings.</p>
+                <p className="mt-2 mb-5 text-muted">
+                  {sync.user && sync.phase === "starting"
+                    ? `Signed in as ${sync.user.email ?? sync.user.name}. Getting your data…`
+                    : "You can change this later in Settings."}
+                </p>
               </motion.div>
               <motion.div variants={item}>
                 <CurrencyPicker onPick={setCurrency} stickyTop="top-[env(safe-area-inset-top)]" />
@@ -102,6 +127,7 @@ export function Welcome() {
           )}
         </AnimatePresence>
       </div>
+      <AuthSheet open={signingIn} onClose={() => setSigningIn(false)} />
     </main>
   );
 }

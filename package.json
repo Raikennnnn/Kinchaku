@@ -21,6 +21,7 @@
     "@phosphor-icons/react": "^2.1.10",
     "dexie": "^4.4.6",
     "dexie-react-hooks": "^4.4.0",
+    "firebase": "^12.19.0",
     "motion": "^13.4.5",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"

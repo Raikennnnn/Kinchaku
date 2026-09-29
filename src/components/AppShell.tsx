@@ -10,7 +10,6 @@ import {
   ChartDonutIcon,
   CheckIcon,
   CloudArrowDownIcon,
-  DeviceMobileIcon,
   DotsThreeCircleIcon,
   GearSixIcon,
   NotebookIcon,
@@ -21,6 +20,7 @@ import {
 } from "@phosphor-icons/react";
 import { listLedgers, setActiveLedger } from "../data/ledgers";
 import { useLedgerId } from "../state";
+import { SyncBadge, SyncLine } from "../sync/SyncStatus";
 import { Brand } from "./Brand";
 import { CategoryIcon } from "./CategoryIcon";
 import { Sheet } from "./Sheet";
@@ -124,10 +124,9 @@ export function AppShell({ view, onNavigate, onOpenSettings, children }: Props) 
             </button>
             <ThemeButton />
           </div>
-          <p className="mt-4 flex items-center gap-2 px-4 text-xs text-muted">
-            <DeviceMobileIcon size={14} aria-hidden="true" />
-            Saved on this device
-          </p>
+          <div className="mt-4 px-4">
+            <SyncLine />
+          </div>
         </div>
       </aside>
 
@@ -153,6 +152,7 @@ export function AppShell({ view, onNavigate, onOpenSettings, children }: Props) 
                 <CaretDownIcon size={12} weight="bold" className="shrink-0 text-muted" aria-hidden="true" />
               </button>
             )}
+            <SyncBadge onOpen={onOpenSettings} />
             <ThemeButton />
             <button
               type="button"
