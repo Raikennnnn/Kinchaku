@@ -6,7 +6,8 @@ Japanese drawstring coin purse.
 - Works fully offline; data is stored on the device (IndexedDB).
 - Optional account (email or Google) keeps phones and computers in sync.
 - Installs from the browser: on iPhone, Safari → Share → **Add to Home Screen**.
-- Android APK builds are planned through GitHub Releases.
+- Android: download the APK from the latest GitHub release (or install from
+  Chrome).
 
 ## Layout
 
@@ -33,6 +34,26 @@ npm run icons      # regenerate app icons from public/logo.svg
 
 `scripts/serve.mjs` starts the same servers for tools that can only launch
 commands without spaces in their paths (it resolves the real folder first).
+
+## Android app
+
+The APK is a Trusted Web Activity: a small Android app that opens the website
+full screen in Chrome, so it always runs the latest version and shares its
+sign-in, sync and offline storage. It's made with Google's Bubblewrap
+(`android/twa-manifest.json`, `android/generate.mjs`).
+
+- `.github/workflows/android.yml` builds and signs it on every published
+  release and attaches it as `kinchaku.apk`; the website's Download APK button
+  links to `releases/latest/download/kinchaku.apk`.
+- Signing uses three repository secrets: `ANDROID_KEYSTORE_BASE64`,
+  `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`. The keystore lives outside
+  the repo; lose it and installed apps can't be updated.
+- `public/.well-known/assetlinks.json` holds the signing key's SHA-256
+  fingerprint, proving the app and the site belong together (without it,
+  Android shows a browser address bar inside the app).
+- `npm audit` flags Bubblewrap's own dependencies (zip, image, Play Store
+  helpers). They only run in the build workflow on our own files and aren't
+  part of the app.
 
 ## How data is stored
 
@@ -119,4 +140,4 @@ migrations are in `src/db.ts`.
 2. ✅ Money in and out, balances, carry-over, budgets, accounts, goals, ledgers, stats, backup
 3. ✅ Sign-in and sync between devices (Firebase, free tier); hosting on Vercel
 4. Sharing a ledger with someone else
-5. An automatic Android APK build on GitHub Releases
+5. ✅ An automatic Android APK build on GitHub Releases

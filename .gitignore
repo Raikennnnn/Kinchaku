@@ -5,3 +5,9 @@ dev-dist
 !.env.example
 *.log
 .DS_Store
+
+# Android build (generated in CI)
+android/project/
+android/node_modules/
+*.keystore
+*.jks

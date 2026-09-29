@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "app.vercel.kinchaku",
+      "sha256_cert_fingerprints": [
+        "39:A9:82:B8:0F:B4:7E:8B:43:CB:98:6E:31:7B:B8:1D:B8:DE:2C:4F:43:7A:D9:82:33:F0:97:F6:52:2E:8B:77"
+      ]
+    }
+  }
+]

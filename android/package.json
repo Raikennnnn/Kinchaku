@@ -1,0 +1,9 @@
+{
+  "name": "kinchaku-android",
+  "private": true,
+  "type": "module",
+  "description": "Builds the Android app (a Trusted Web Activity) from twa-manifest.json. See .github/workflows/android.yml.",
+  "dependencies": {
+    "@bubblewrap/core": "1.25.0"
+  }
+}
