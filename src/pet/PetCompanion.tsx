@@ -23,7 +23,7 @@ import { useCurrency, useLedgerId } from "../state";
 import { answer, greeting, insights, moodFor, QUICK_QUESTIONS, type Reply, type Verdict } from "./brain";
 import { loadPetContext, type PetContext } from "./context";
 import { detectLang, say, type Lang } from "./lang";
-import { PetCat, type Mood, type PetCatHandle } from "./PetCat";
+import { CAT, PetCat, type Mood, type PetCatHandle } from "./PetCat";
 
 export type PetLangSetting = "auto" | "en" | "tl";
 export const DEFAULT_PET_NAME = "Koban";
@@ -509,15 +509,18 @@ function CatFace() {
   return (
     <svg viewBox="0 0 32 32" className="mb-0.5 size-7 shrink-0" aria-hidden="true">
       <circle cx="16" cy="16" r="16" fill="var(--surface-2)" />
-      <path d="M7.5 14 L9 5.5 L14.5 10.5 Z" fill="#fbf6ee" stroke="#2b2622" strokeWidth="1.3" strokeLinejoin="round" />
-      <path d="M24.5 14 L23 5.5 L17.5 10.5 Z" fill="#fbf6ee" stroke="#2b2622" strokeWidth="1.3" strokeLinejoin="round" />
-      <path d="M9.6 10.4 L10.2 7.6 L12.4 9.8 Z" fill="#f4a9a0" />
-      <path d="M22.4 10.4 L21.8 7.6 L19.6 9.8 Z" fill="#f4a9a0" />
-      <ellipse cx="16" cy="17.5" rx="9.5" ry="8" fill="#fbf6ee" stroke="#2b2622" strokeWidth="1.3" />
-      <path d="M10.8 17 q1.6 1.4 3.2 0 M18 17 q1.6 1.4 3.2 0" fill="none" stroke="#2b2622" strokeWidth="1.2" strokeLinecap="round" />
-      <ellipse cx="10.6" cy="20" rx="1.6" ry="1" fill="#f4a9a0" opacity="0.8" />
-      <ellipse cx="21.4" cy="20" rx="1.6" ry="1" fill="#f4a9a0" opacity="0.8" />
-      <path d="M15.1 19.6 h1.8 l-0.9 0.9 Z" fill="#e0776a" />
+      {/* Calico ears: sumi black and persimmon, like the full drawing */}
+      <path d="M7.2 15 L7.8 6 Q8.1 4.6 9.5 5.3 L15 9.8 Z" fill={CAT.sumi} stroke={CAT.line} strokeWidth="1.1" strokeLinejoin="round" />
+      <path d="M24.8 15 L24.2 6 Q23.9 4.6 22.5 5.3 L17 9.8 Z" fill={CAT.orange} stroke={CAT.line} strokeWidth="1.1" strokeLinejoin="round" />
+      <path d="M9.4 11.6 L9.7 7.6 L12.8 10.2 Z" fill={CAT.pinkDeep} opacity="0.85" />
+      <path d="M22.6 11.6 L22.3 7.6 L19.2 10.2 Z" fill={CAT.pink} />
+      <ellipse cx="16" cy="17.8" rx="10" ry="8.2" fill={CAT.fur} stroke={CAT.line} strokeWidth="1.2" />
+      <path d="M7.3 15 C8.5 11.3 11.8 9.8 15 10.1 C14.4 12.6 11.6 14 7.3 15 Z" fill={CAT.sumi} />
+      <path d="M10.6 17.4 q1.7 -1.8 3.4 0 M18 17.4 q1.7 -1.8 3.4 0" fill="none" stroke={CAT.line} strokeWidth="1.2" strokeLinecap="round" />
+      <ellipse cx="10" cy="20.2" rx="1.7" ry="1" fill={CAT.pink} opacity="0.7" />
+      <ellipse cx="22" cy="20.2" rx="1.7" ry="1" fill={CAT.pink} opacity="0.7" />
+      <path d="M15.2 19.3 Q16 18.9 16.8 19.3 Q16.4 20.2 16 20.3 Q15.6 20.2 15.2 19.3 Z" fill={CAT.pinkDeep} />
+      <path d="M14.4 20.9 Q15.2 21.9 16 20.9 Q16.8 21.9 17.6 20.9" fill="none" stroke={CAT.line} strokeWidth="0.8" strokeLinecap="round" />
     </svg>
   );
 }
