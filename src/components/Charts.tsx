@@ -12,12 +12,15 @@ import { EASE_OUT } from "./motion";
 
 type Tip = { x: number; y: number; title: string; lines: string[] } | null;
 
-function Tooltip({ tip }: { tip: Tip }) {
+type Align = "start" | "center" | "end";
+const ALIGN: Record<Align, string> = { start: "-translate-x-3", center: "-translate-x-1/2", end: "-translate-x-[calc(100%-0.75rem)]" };
+
+function Tooltip({ tip, align = "center" }: { tip: Tip; align?: Align }) {
   if (!tip) return null;
   return (
     <div
       role="status"
-      className="pointer-events-none absolute z-10 -translate-x-1/2 -translate-y-full rounded-xl bg-ink px-3 py-2 text-xs whitespace-nowrap text-bg shadow-lg"
+      className={`pointer-events-none absolute z-10 ${ALIGN[align]} -translate-y-full rounded-xl bg-ink px-3 py-2 text-xs whitespace-nowrap text-bg shadow-lg`}
       style={{ left: tip.x, top: tip.y - 8 }}
     >
       <p className="font-semibold">{tip.title}</p>
@@ -136,11 +139,15 @@ export function DailyBars({
   );
 }
 
-/** Positions a tooltip given x as a percentage of width and y in viewBox units. */
+/**
+ * Positions a tooltip given x as a percentage of width and y in viewBox units.
+ * Near either edge it opens towards the middle, so it never runs off a phone screen.
+ */
 function PercentTooltip({ tip, height }: { tip: NonNullable<Tip>; height: number }) {
+  const align: Align = tip.x < 30 ? "start" : tip.x > 70 ? "end" : "center";
   return (
     <div className="pointer-events-none absolute" style={{ left: `${tip.x}%`, top: `${(tip.y / height) * 100}%` }}>
-      <Tooltip tip={{ ...tip, x: 0, y: 0 }} />
+      <Tooltip tip={{ ...tip, x: 0, y: 0 }} align={align} />
     </div>
   );
 }

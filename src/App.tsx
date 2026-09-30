@@ -9,6 +9,7 @@ import { bootSync } from "./sync/client";
 import { AppShell, type View } from "./components/AppShell";
 import { EASE_OUT } from "./components/motion";
 import { SettingsSheet } from "./components/SettingsSheet";
+import { Toaster } from "./components/Toast";
 import { Accounts } from "./screens/Accounts";
 import { Backup } from "./screens/Backup";
 import { Budgets } from "./screens/Budgets";
@@ -102,6 +103,7 @@ export default function App() {
             </AppShell>
             {/* Outside the screen transition, so the cat stays put while tabs change. */}
             <PetCompanion onHome={view === "home"} />
+            <Toaster />
             <SettingsSheet
               open={settingsOpen}
               currency={currency}

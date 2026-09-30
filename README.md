@@ -120,7 +120,8 @@ month's leftover in (or take an overspend out) as a "Carried over" entry.
 - Day, week, month and year views; a calendar of each day's in and out; stats
 - Monthly budgets, overall and per category, with warnings at 80% and over
 - Accounts (cash, bank, e-wallet, card, savings, loan), transfers, net worth
-- Repeating entries, entries left out of totals, quick notes, "add another"
+- Repeating entries, entries left out of totals, quick notes, "add another";
+  swipe an entry left to delete it (with Undo)
 - Savings goals, separate ledgers (e.g. Personal and Business)
 - Custom categories with an icon or your own picture
 - Backup and restore (JSON), spreadsheet export and import (CSV)

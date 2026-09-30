@@ -178,7 +178,7 @@ export function Chip({
 /** Screen title row: big display heading with optional actions on the right. */
 export function ScreenHeader({ title, children }: { title: string; children?: ReactNode }) {
   return (
-    <div className="flex items-end justify-between gap-4">
+    <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
       <h1 className="min-w-0 truncate font-display text-[1.8rem] leading-none font-semibold min-[400px]:text-[2.15rem] lg:text-[2.75rem]">
         {title}
       </h1>

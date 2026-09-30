@@ -20,8 +20,8 @@ export function Categories() {
   const shown = (all ?? []).filter((c) => c.kind === kind && !c.system);
 
   return (
-    <main className="mx-auto max-w-lg px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+7rem)] lg:max-w-4xl lg:px-10 lg:pt-10 lg:pb-16">
-      <div className="flex items-end justify-between gap-4">
+    <main className="mx-auto max-w-lg overflow-x-clip px-4 pt-4 pb-[calc(env(safe-area-inset-bottom)+10.5rem)] lg:max-w-4xl lg:px-10 lg:pt-10 lg:pb-16">
+      <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <h1 className="font-display text-[1.8rem] leading-none font-semibold min-[400px]:text-[2.15rem] lg:text-[2.75rem]">
           Categories
         </h1>

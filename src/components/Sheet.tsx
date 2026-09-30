@@ -3,6 +3,7 @@ import { motion, useAnimationControls, useDragControls, useReducedMotion } from 
 import { XIcon } from "@phosphor-icons/react";
 import { useKeyboardFit } from "../lib/keyboard";
 import { useMediaQuery } from "../lib/media";
+import { lockPageScroll } from "../lib/scrollLock";
 
 type Props = {
   open: boolean;
@@ -68,6 +69,11 @@ export function Sheet({ open, title, onClose, children, fill = false, header }: 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
+  // While a sheet is open, swipes scroll the sheet, never the page behind it.
+  useEffect(() => {
+    if (open) return lockPageScroll();
+  }, [open]);
+
   // Focus after the content has mounted: showModal alone would focus the Close button.
   useEffect(() => {
     if (open) ref.current?.querySelector<HTMLElement>("[data-autofocus]")?.focus();
@@ -125,7 +131,7 @@ export function Sheet({ open, title, onClose, children, fill = false, header }: 
             : undefined
         }
         className={`sheet-panel max-h-[92dvh] rounded-t-3xl bg-bg px-5 pb-[calc(env(safe-area-inset-bottom)+1.25rem)] shadow-[0_-12px_40px_-20px_rgb(8_10_16/0.5)] lg:px-7 lg:pt-6 ${
-          fill ? "flex h-[88dvh] flex-col overflow-hidden lg:h-[min(80dvh,720px)]" : "overflow-y-auto"
+          fill ? "flex h-[88dvh] flex-col overflow-hidden lg:h-[min(80dvh,720px)]" : "overflow-x-hidden overflow-y-auto overscroll-contain"
         }`}
       >
         {/* Drag area on phones: the grab handle and the title bar. */}

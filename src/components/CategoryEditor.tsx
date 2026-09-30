@@ -122,17 +122,22 @@ function EditorForm({ category, kind: newKind, categories: allCategories, usage,
     <form onSubmit={save} noValidate>
       {/* Live preview */}
       <div className="flex items-center gap-4 rounded-2xl bg-surface p-4 shadow-[inset_0_0_0_1px_var(--line)]">
-        <AnimatePresence mode="popLayout" initial={false}>
-          <motion.span
-            key={`${iconKey}-${color}`}
-            initial={{ scale: 0.6, opacity: 0, rotate: -12 }}
-            animate={{ scale: 1, opacity: 1, rotate: 0 }}
-            exit={{ scale: 0.6, opacity: 0 }}
-            transition={{ type: "spring", stiffness: 420, damping: 22 }}
-          >
-            <CategoryIcon icon={icon} color={color} size={64} />
-          </motion.span>
-        </AnimatePresence>
+        {/* The old and new icon cross over inside this fixed box, so the one
+            leaving can't be placed anywhere else on the sheet mid-animation. */}
+        <span className="relative size-16 shrink-0">
+          <AnimatePresence initial={false}>
+            <motion.span
+              key={`${iconKey}-${color}`}
+              initial={{ scale: 0.6, opacity: 0, rotate: -12 }}
+              animate={{ scale: 1, opacity: 1, rotate: 0 }}
+              exit={{ scale: 0.6, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 420, damping: 22 }}
+              className="absolute inset-0"
+            >
+              <CategoryIcon icon={icon} color={color} size={64} />
+            </motion.span>
+          </AnimatePresence>
+        </span>
         <div className="min-w-0">
           <p className={`truncate font-display text-2xl font-semibold ${name.trim() ? "" : "text-muted"}`}>
             {name.trim() || "Category name"}

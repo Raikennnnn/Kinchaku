@@ -120,6 +120,15 @@ body {
     outline: 2px solid var(--accent-text);
     outline-offset: 2px;
   }
+  /* A sheet is focused as a whole when it opens; the ring would draw a line across its top. */
+  dialog:focus-visible {
+    outline: none;
+  }
+  /* Browsers keep a fieldset at least as wide as its content, so a sideways
+     chip row inside one would stretch the whole sheet and let it slide. */
+  fieldset {
+    min-width: 0;
+  }
 }
 
 @layer components {

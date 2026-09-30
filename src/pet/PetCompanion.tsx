@@ -46,6 +46,7 @@ export function PetCompanion({ onHome }: { onHome: boolean }) {
   const ledgerId = useLedgerId();
   const currency = useCurrency();
   const reduce = useReducedMotion();
+  const tucked = useTuckOnScroll();
   const settings = useLiveQuery(async () => ({
     name: (await getSetting<string>("petName")) || DEFAULT_PET_NAME,
     hidden: (await getSetting<boolean>("petHidden")) ?? false,
@@ -94,7 +95,16 @@ export function PetCompanion({ onHome }: { onHome: boolean }) {
 
   return (
     <>
-      <div className="pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+4.6rem)] left-2 z-10 lg:right-8 lg:bottom-6 lg:left-auto">
+      {/* Steps aside (down behind the tab bar) while you scroll down through a
+          list, so it never sits on top of what you're reading. */}
+      <motion.div
+        initial={false}
+        animate={tucked && !open ? { y: 110, opacity: 0 } : { y: 0, opacity: 1 }}
+        transition={reduce ? { duration: 0 } : { type: "spring", stiffness: 380, damping: 34 }}
+        className={`pointer-events-none fixed bottom-[calc(env(safe-area-inset-bottom)+4.6rem)] left-2 z-10 lg:right-8 lg:bottom-6 lg:left-auto ${
+          tucked && !open ? "[&_*]:!pointer-events-none" : ""
+        }`}
+      >
         <div className="relative flex flex-col items-start lg:items-end">
           <AnimatePresence>
             {showBubble && bubble && !open && (
@@ -136,7 +146,7 @@ export function PetCompanion({ onHome }: { onHome: boolean }) {
             <PetCat ref={cat} mood={mood} size={68} hearts={hearts} label={`${settings.name} (${mood})`} />
           </motion.button>
         </div>
-      </div>
+      </motion.div>
 
       <Sheet
         open={open}
@@ -614,4 +624,25 @@ function CatLanding({ reduce, children }: { reduce: boolean; children: ReactNode
       ))}
     </div>
   );
+}
+
+/**
+ * True while the page is being scrolled down (past the first screenful's top),
+ * false again as soon as it scrolls up or reaches the top.
+ */
+function useTuckOnScroll(): boolean {
+  const [tucked, setTucked] = useState(false);
+  useEffect(() => {
+    let last = window.scrollY;
+    const onScroll = () => {
+      const y = window.scrollY;
+      if (y < 40) setTucked(false);
+      else if (y > last + 6) setTucked(true);
+      else if (y < last - 6) setTucked(false);
+      last = y;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+  return tucked;
 }

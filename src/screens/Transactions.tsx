@@ -218,7 +218,14 @@ export function Transactions() {
                       {day ? `Nothing on ${shortDateLabel(day)}.` : `Nothing in ${monthLabel(month)} yet.`}
                     </p>
                   ) : (
-                    <TransactionList days={groupByDay(shown)} currency={currency} categoryOf={categoryOf} accountName={accountName} onSelect={setEditing} />
+                    <TransactionList
+                      days={groupByDay(shown)}
+                      currency={currency}
+                      categoryOf={categoryOf}
+                      accountName={accountName}
+                      onSelect={setEditing}
+                      deletable
+                    />
                   )}
                 </section>
               </div>

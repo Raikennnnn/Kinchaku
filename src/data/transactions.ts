@@ -34,6 +34,10 @@ export const updateTransaction = (id: string, input: TransactionInput) =>
 export const deleteTransaction = (id: string) =>
   db.transactions.update(id, { deleted: true, updatedAt: Date.now() });
 
+/** Brings back a deleted entry (the Undo after a swipe). */
+export const restoreTransaction = (id: string) =>
+  db.transactions.update(id, { deleted: false, updatedAt: Date.now() });
+
 /* ---------- Carry-over ---------- */
 
 // One carry-over entry per ledger and month with a fixed id, so carrying on two

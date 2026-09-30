@@ -133,7 +133,7 @@ function Detail({ category, period, categories, categoryOf, accountName }: Omit<
             Nothing here {periodPhrase(period)}.
           </p>
         ) : (
-          <TransactionList days={days} currency={currency} categoryOf={categoryOf} accountName={accountName} onSelect={setEditing} />
+          <TransactionList days={days} currency={currency} categoryOf={categoryOf} accountName={accountName} onSelect={setEditing} deletable />
         )}
       </div>
 

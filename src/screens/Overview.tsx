@@ -234,6 +234,7 @@ export function Overview() {
                   categoryOf={categoryOf}
                   accountName={accountName}
                   onSelect={setEditing}
+                  deletable
                 />
               )}
             </motion.section>
