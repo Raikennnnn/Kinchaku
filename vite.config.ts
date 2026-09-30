@@ -32,8 +32,10 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      // New versions install in the background and apply on the next open.
-      registerType: "autoUpdate",
+      // New versions download in the background and wait; src/lib/updates.ts
+      // switches over when it won't interrupt anyone (see keepAppUpdated).
+      registerType: "prompt",
+      injectRegister: false,
       includeAssets: ["favicon.ico", "logo.svg", "apple-touch-icon-180x180.png"],
       manifest: {
         name: "Kinchaku",

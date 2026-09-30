@@ -79,43 +79,46 @@ export default function App() {
   };
 
   return (
-    // Leaving the welcome flow fades it out before the app rises in.
-    <AnimatePresence mode="wait" initial={false}>
-      {currency === null ? (
-        <motion.div key="welcome" exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.25 } }}>
-          <Welcome />
-        </motion.div>
-      ) : (
-        <motion.div key="app" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
-          <AppStateProvider value={{ ledgerId, currency }}>
-            <AppShell view={view} onNavigate={navigate} onOpenSettings={() => setSettingsOpen(true)}>
-              <AnimatePresence mode="wait" initial={false}>
-                <motion.div
-                  // Switching ledger re-mounts the screen so its state starts fresh.
-                  key={`${view}-${ledgerId}`}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE_OUT } }}
-                  exit={{ opacity: 0, transition: { duration: 0.12 } }}
-                >
-                  {screen()}
-                </motion.div>
-              </AnimatePresence>
-            </AppShell>
-            {/* Outside the screen transition, so the cat stays put while tabs change. */}
-            <PetCompanion onHome={view === "home"} />
-            <Toaster />
-            <SettingsSheet
-              open={settingsOpen}
-              currency={currency}
-              onClose={() => setSettingsOpen(false)}
-              onOpenCategories={() => {
-                setSettingsOpen(false);
-                navigate("categories");
-              }}
-            />
-          </AppStateProvider>
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <>
+      {/* Notices (Undo, new version) show on every screen, the welcome flow included. */}
+      <Toaster />
+      {/* Leaving the welcome flow fades it out before the app rises in. */}
+      <AnimatePresence mode="wait" initial={false}>
+        {currency === null ? (
+          <motion.div key="welcome" exit={{ opacity: 0, scale: 0.98, transition: { duration: 0.25 } }}>
+            <Welcome />
+          </motion.div>
+        ) : (
+          <motion.div key="app" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }}>
+            <AppStateProvider value={{ ledgerId, currency }}>
+              <AppShell view={view} onNavigate={navigate} onOpenSettings={() => setSettingsOpen(true)}>
+                <AnimatePresence mode="wait" initial={false}>
+                  <motion.div
+                    // Switching ledger re-mounts the screen so its state starts fresh.
+                    key={`${view}-${ledgerId}`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0, transition: { duration: 0.35, ease: EASE_OUT } }}
+                    exit={{ opacity: 0, transition: { duration: 0.12 } }}
+                  >
+                    {screen()}
+                  </motion.div>
+                </AnimatePresence>
+              </AppShell>
+              {/* Outside the screen transition, so the cat stays put while tabs change. */}
+              <PetCompanion onHome={view === "home"} />
+              <SettingsSheet
+                open={settingsOpen}
+                currency={currency}
+                onClose={() => setSettingsOpen(false)}
+                onOpenCategories={() => {
+                  setSettingsOpen(false);
+                  navigate("categories");
+                }}
+              />
+            </AppStateProvider>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
