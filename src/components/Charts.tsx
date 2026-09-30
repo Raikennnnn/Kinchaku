@@ -6,32 +6,37 @@ import { EASE_OUT } from "./motion";
 
 /**
  * Small, dependency-free SVG charts. One axis each, thin marks with rounded
- * data ends on the baseline, a recessive grid, a hover/focus tooltip on every
- * mark, and a hidden table for screen readers.
+ * data ends on the baseline, a recessive grid, and a hidden table for screen
+ * readers. Tapping (or hovering) a bar shows its numbers in a readout line
+ * above the chart and dims the other bars. A floating tooltip would cover the
+ * bars and run off a phone's edge; the readout never moves.
  */
 
-type Tip = { x: number; y: number; title: string; lines: string[] } | null;
+/** Tap a bar to pin it (tap again to let go); a mouse hovering previews another. */
+function useSelection() {
+  const [pinned, setPinned] = useState<number | null>(null);
+  const [hovered, setHovered] = useState<number | null>(null);
+  const bind = (i: number) => ({
+    onClick: () => setPinned((p) => (p === i ? null : i)),
+    onFocus: () => setPinned(i),
+    onPointerEnter: (e: React.PointerEvent) => e.pointerType === "mouse" && setHovered(i),
+    onPointerLeave: (e: React.PointerEvent) => e.pointerType === "mouse" && setHovered(null),
+    onKeyDown: (e: React.KeyboardEvent) => e.key === "Escape" && setPinned(null),
+  });
+  return { selected: hovered ?? pinned, bind };
+}
 
-type Align = "start" | "center" | "end";
-const ALIGN: Record<Align, string> = { start: "-translate-x-3", center: "-translate-x-1/2", end: "-translate-x-[calc(100%-0.75rem)]" };
-
-function Tooltip({ tip, align = "center" }: { tip: Tip; align?: Align }) {
-  if (!tip) return null;
+/** The line above a chart: what's selected, or the chart's total and a hint. */
+function Readout({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <div
-      role="status"
-      className={`pointer-events-none absolute z-40 ${ALIGN[align]} -translate-y-full rounded-xl bg-ink px-3 py-2 text-xs whitespace-nowrap text-bg shadow-lg`}
-      style={{ left: tip.x, top: tip.y - 8 }}
-    >
-      <p className="font-semibold">{tip.title}</p>
-      {tip.lines.map((l) => (
-        <p key={l} className="tabular-nums opacity-80">
-          {l}
-        </p>
-      ))}
+    <div role="status" aria-live="polite" className="mb-3 flex min-h-[2.75rem] flex-wrap items-baseline justify-between gap-x-4 gap-y-0.5">
+      <p className="text-sm text-muted">{title}</p>
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-sm font-semibold tabular-nums">{children}</div>
     </div>
   );
 }
+
+const dim = (selected: number | null, i: number) => (selected === null || selected === i ? 1 : 0.3);
 
 /** Rounded top, square bottom: the data end is soft, the baseline is solid. */
 function barPath(x: number, y: number, w: number, h: number, r = 4) {
@@ -57,7 +62,7 @@ export function DailyBars({
   days: { date: string; label: string; amount: number }[];
   currency: string;
 }) {
-  const [tip, setTip] = useState<Tip>(null);
+  const { selected, bind } = useSelection();
   const W = 640;
   const H = 180;
   const pad = { top: 12, bottom: 22, left: 0, right: 0 };
@@ -65,9 +70,14 @@ export function DailyBars({
   const slot = (W - pad.left - pad.right) / days.length;
   const bw = Math.max(2, slot - 2); // 2px gap between bars
   const plotH = H - pad.top - pad.bottom;
+  const total = days.reduce((s, d) => s + d.amount, 0);
+  const pick = selected === null ? null : days[selected];
 
   return (
     <figure className="relative">
+      <Readout title={pick ? pick.label : "Tap a day to see it"}>
+        {pick ? <span>Spent {formatMoney(pick.amount, currency)}</span> : <span>{formatMoney(total, currency)} in all</span>}
+      </Readout>
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full overflow-visible" role="img" aria-label="Spending per day">
         {[0.5, 1].map((g) => (
           <line
@@ -92,10 +102,13 @@ export function DailyBars({
                 d={barPath(x, y, bw, h)}
                 className="fill-chart-out"
                 initial={{ opacity: 0, scaleY: 0 }}
-                animate={{ opacity: 1, scaleY: 1 }}
+                animate={{ opacity: dim(selected, i), scaleY: 1 }}
                 style={{ originY: 1, transformBox: "fill-box" }}
-                transition={{ duration: 0.5, delay: i * 0.012, ease: EASE_OUT }}
+                transition={{ scaleY: { duration: 0.5, delay: i * 0.012, ease: EASE_OUT }, opacity: { duration: 0.2 } }}
               />
+              {selected === i && (
+                <rect x={x} y={pad.top + plotH + 2} width={bw} height={2.5} rx={1.25} className="fill-ink" />
+              )}
               {/* Hit target: the whole column, bigger than the bar. */}
               <rect
                 x={pad.left + i * slot}
@@ -105,11 +118,9 @@ export function DailyBars({
                 fill="transparent"
                 tabIndex={0}
                 aria-label={`${d.label}: ${formatMoney(d.amount, currency)}`}
-                onMouseEnter={() => setTip({ x: ((x + bw / 2) / W) * 100, y: y, title: d.label, lines: [`Spent ${formatMoney(d.amount, currency)}`] })}
-                onFocus={() => setTip({ x: ((x + bw / 2) / W) * 100, y: y, title: d.label, lines: [`Spent ${formatMoney(d.amount, currency)}`] })}
-                onMouseLeave={() => setTip(null)}
-                onBlur={() => setTip(null)}
-                className="outline-none"
+                aria-pressed={selected === i}
+                {...bind(i)}
+                className="cursor-pointer outline-none"
               />
               {show && (
                 <text x={x + bw / 2} y={H - 6} textAnchor="middle" className="fill-muted text-[11px]">
@@ -123,7 +134,6 @@ export function DailyBars({
           {compactMoney(max, currency)}
         </text>
       </svg>
-      {tip && <PercentTooltip tip={tip} height={H} />}
       <table className="sr-only">
         <caption>Spending per day</caption>
         <tbody>
@@ -139,19 +149,6 @@ export function DailyBars({
   );
 }
 
-/**
- * Positions a tooltip given x as a percentage of width and y in viewBox units.
- * Near either edge it opens towards the middle, so it never runs off a phone screen.
- */
-function PercentTooltip({ tip, height }: { tip: NonNullable<Tip>; height: number }) {
-  const align: Align = tip.x < 30 ? "start" : tip.x > 70 ? "end" : "center";
-  return (
-    <div className="pointer-events-none absolute" style={{ left: `${tip.x}%`, top: `${(tip.y / height) * 100}%` }}>
-      <Tooltip tip={{ ...tip, x: 0, y: 0 }} align={align} />
-    </div>
-  );
-}
-
 /* ---------- Money in vs spent, month by month ---------- */
 
 export function MonthTrend({
@@ -161,7 +158,7 @@ export function MonthTrend({
   months: { month: string; label: string; income: number; expense: number }[];
   currency: string;
 }) {
-  const [tip, setTip] = useState<Tip>(null);
+  const { selected, bind } = useSelection();
   const W = 640;
   const H = 200;
   const pad = { top: 14, bottom: 24 };
@@ -169,19 +166,29 @@ export function MonthTrend({
   const max = niceMax(Math.max(...months.flatMap((m) => [m.income, m.expense]), 0));
   const slot = W / months.length;
   const bw = Math.min(28, (slot - 16) / 2);
+  const pick = selected === null ? null : months[selected];
+  const totalIn = months.reduce((s, m) => s + m.income, 0);
+  const totalOut = months.reduce((s, m) => s + m.expense, 0);
+  const shown = pick ?? { income: totalIn, expense: totalOut };
 
   return (
     <figure className="relative">
-      <div className="mb-3 flex gap-4 text-sm" aria-hidden="true">
-        <span className="flex items-center gap-2">
-          <span className="size-2.5 rounded-sm bg-chart-in" />
-          Money in
+      <Readout title={pick ? pick.label : "Six months · tap one"}>
+        <span className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-sm bg-chart-in" aria-hidden="true" />
+          <span className="font-normal text-muted">In</span>
+          {formatMoney(shown.income, currency)}
         </span>
-        <span className="flex items-center gap-2">
-          <span className="size-2.5 rounded-sm bg-chart-out" />
-          Spent
+        <span className="flex items-center gap-1.5">
+          <span className="size-2.5 rounded-sm bg-chart-out" aria-hidden="true" />
+          <span className="font-normal text-muted">Spent</span>
+          {formatMoney(shown.expense, currency)}
         </span>
-      </div>
+        <span className="flex items-center gap-1.5">
+          <span className="font-normal text-muted">Left</span>
+          {formatMoney(shown.income - shown.expense, currency)}
+        </span>
+      </Readout>
       <div className="relative">
       <svg viewBox={`0 0 ${W} ${H}`} className="h-auto w-full overflow-visible" role="img" aria-label="Money in and spent per month">
         {[0.5, 1].map((g) => (
@@ -193,25 +200,23 @@ export function MonthTrend({
           const hIn = (m.income / max) * plotH;
           const hOut = (m.expense / max) * plotH;
           const lines = [`In ${formatMoney(m.income, currency)}`, `Spent ${formatMoney(m.expense, currency)}`, `Left ${formatMoney(m.income - m.expense, currency)}`];
-          const top = pad.top + plotH - Math.max(hIn, hOut);
-          const show = () => setTip({ x: (cx / W) * 100, y: top, title: m.label, lines });
           return (
             <g key={m.month}>
               <motion.path
                 d={barPath(cx - bw - 1, pad.top + plotH - hIn, bw, hIn)}
                 className="fill-chart-in"
                 initial={{ scaleY: 0 }}
-                animate={{ scaleY: 1 }}
+                animate={{ scaleY: 1, opacity: dim(selected, i) }}
                 style={{ originY: 1, transformBox: "fill-box" }}
-                transition={{ duration: 0.6, delay: i * 0.05, ease: EASE_OUT }}
+                transition={{ scaleY: { duration: 0.6, delay: i * 0.05, ease: EASE_OUT }, opacity: { duration: 0.2 } }}
               />
               <motion.path
                 d={barPath(cx + 1, pad.top + plotH - hOut, bw, hOut)}
                 className="fill-chart-out"
                 initial={{ scaleY: 0 }}
-                animate={{ scaleY: 1 }}
+                animate={{ scaleY: 1, opacity: dim(selected, i) }}
                 style={{ originY: 1, transformBox: "fill-box" }}
-                transition={{ duration: 0.6, delay: i * 0.05 + 0.05, ease: EASE_OUT }}
+                transition={{ scaleY: { duration: 0.6, delay: i * 0.05 + 0.05, ease: EASE_OUT }, opacity: { duration: 0.2 } }}
               />
               <rect
                 x={i * slot}
@@ -221,13 +226,16 @@ export function MonthTrend({
                 fill="transparent"
                 tabIndex={0}
                 aria-label={`${m.label}: ${lines.join(", ")}`}
-                onMouseEnter={show}
-                onFocus={show}
-                onMouseLeave={() => setTip(null)}
-                onBlur={() => setTip(null)}
-                className="outline-none"
+                aria-pressed={selected === i}
+                {...bind(i)}
+                className="cursor-pointer outline-none"
               />
-              <text x={cx} y={H - 6} textAnchor="middle" className="fill-muted text-[12px]">
+              <text
+                x={cx}
+                y={H - 6}
+                textAnchor="middle"
+                className={`text-[12px] ${selected === i ? "fill-ink font-semibold" : "fill-muted"}`}
+              >
                 {m.label}
               </text>
             </g>
@@ -237,7 +245,6 @@ export function MonthTrend({
           {compactMoney(max, currency)}
         </text>
       </svg>
-      {tip && <PercentTooltip tip={tip} height={H} />}
       </div>
       <table className="sr-only">
         <caption>Money in and spent per month</caption>
