@@ -171,16 +171,40 @@ export function ScrollRow({ children, label }: { children: ReactNode; label: str
         at: room > 0 ? el.scrollLeft / room : 0,
       });
     };
+    // A mouse wheel turns up and down; over the row it scrolls sideways
+    // instead, until the row reaches its end and the page takes over again.
+    const wheel = (e: WheelEvent) => {
+      if (Math.abs(e.deltaY) <= Math.abs(e.deltaX)) return;
+      const room = el.scrollWidth - el.clientWidth;
+      if (room <= 0) return;
+      if ((e.deltaY < 0 && el.scrollLeft <= 0) || (e.deltaY > 0 && el.scrollLeft >= room - 1)) return;
+      e.preventDefault();
+      el.scrollLeft += e.deltaY;
+    };
     measure();
     el.addEventListener("scroll", measure, { passive: true });
+    el.addEventListener("wheel", wheel, { passive: false });
     const resize = new ResizeObserver(measure);
     resize.observe(el);
     for (const child of el.children) resize.observe(child);
     return () => {
       el.removeEventListener("scroll", measure);
+      el.removeEventListener("wheel", wheel);
       resize.disconnect();
     };
   }, [children]);
+
+  // Dragging the track's handle (or pressing anywhere on the track) moves the row.
+  const track = useRef<HTMLDivElement>(null);
+  const seek = (clientX: number) => {
+    const el = ref.current;
+    const t = track.current;
+    if (!el || !t) return;
+    const r = t.getBoundingClientRect();
+    const handle = r.width * view.share;
+    const at = Math.min(1, Math.max(0, (clientX - r.left - handle / 2) / Math.max(1, r.width - handle)));
+    el.scrollLeft = at * (el.scrollWidth - el.clientWidth);
+  };
 
   const scrolls = view.share < 0.995;
   const fade = scrolls
@@ -199,11 +223,25 @@ export function ScrollRow({ children, label }: { children: ReactNode; label: str
         {children}
       </div>
       {scrolls && (
-        <div aria-hidden="true" className="mx-5 mt-1.5 h-1 overflow-hidden rounded-full bg-line lg:mx-7">
-          <div
-            className="h-full rounded-full bg-muted/70"
-            style={{ width: `${view.share * 100}%`, marginLeft: `${view.at * (1 - view.share) * 100}%` }}
-          />
+        // The bar itself is thin; the area you can grab is taller.
+        <div
+          ref={track}
+          aria-hidden="true"
+          className="group mx-5 cursor-pointer touch-none py-1.5 lg:mx-7"
+          onPointerDown={(e) => {
+            e.currentTarget.setPointerCapture(e.pointerId);
+            seek(e.clientX);
+          }}
+          onPointerMove={(e) => {
+            if (e.currentTarget.hasPointerCapture(e.pointerId)) seek(e.clientX);
+          }}
+        >
+          <div className="h-1 overflow-hidden rounded-full bg-line transition-[height] group-hover:h-1.5">
+            <div
+              className="h-full rounded-full bg-muted/70 group-hover:bg-muted"
+              style={{ width: `${view.share * 100}%`, marginLeft: `${view.at * (1 - view.share) * 100}%` }}
+            />
+          </div>
         </div>
       )}
     </div>
