@@ -1,7 +1,7 @@
 import { motion, useReducedMotion } from "motion/react";
 import { ArrowDownLeftIcon, ArrowUpRightIcon } from "@phosphor-icons/react";
 import type { Slice } from "../lib/summary";
-import { AnimatedMoney, EASE_OUT } from "./motion";
+import { AnimatedMoney, EASE_OUT, FitText } from "./motion";
 
 type Props = {
   /** e.g. "in September", "this week", "today" */
@@ -33,14 +33,11 @@ export function BalanceSummary({ phrase, income, expense, slices, currency, onVi
       <p className="relative text-sm text-brand-muted">
         {over ? `Over ${phrase}` : `Left ${phrase}`}
       </p>
-      <AnimatedMoney
-        value={balance}
-        currency={currency}
-        onView={onView}
-        className={`relative mt-1.5 block text-[2.75rem] leading-none font-semibold tracking-tight tabular-nums ${
-          over ? "text-[#ff9b87]" : ""
-        }`}
-      />
+      <FitText
+        className={`relative mt-1.5 text-[2.75rem] leading-none font-semibold tracking-tight tabular-nums ${over ? "text-[#ff9b87]" : ""}`}
+      >
+        <AnimatedMoney value={balance} currency={currency} onView={onView} />
+      </FitText>
 
       <PotBar income={income} expense={expense} slices={slices} onView={onView} className="relative mt-5" />
 

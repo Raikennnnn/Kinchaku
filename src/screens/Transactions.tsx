@@ -9,7 +9,7 @@ import type { Category, Kind, Transaction } from "../db";
 import { addDays, daysInMonth, longDayLabel, monthLabel, monthOf, monthShort, shiftMonth, shortDateLabel, today } from "../lib/dates";
 import { formatMoney } from "../lib/money";
 import { defaultEntryDate } from "../lib/period";
-import { compactMoney, groupByDay, MISSING_CATEGORY, summarize } from "../lib/summary";
+import { compactNumber, groupByDay, MISSING_CATEGORY, summarize } from "../lib/summary";
 import { useCurrency, useLedgerId } from "../state";
 import { CalendarGrid } from "../components/Calendar";
 import { CategoryDetailSheet } from "../components/CategoryDetailSheet";
@@ -91,7 +91,7 @@ export function Transactions() {
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: dir >= 0 ? "-60%" : "60%" }}
                   transition={{ duration: 0.35, ease: EASE_OUT }}
-                  className="block truncate pb-1 font-display text-[1.8rem] font-semibold min-[400px]:text-[2.15rem] lg:text-[2.75rem]"
+                  className="block pb-1 font-display text-[1.55rem] leading-tight font-semibold min-[360px]:text-[1.8rem] min-[400px]:text-[2.15rem] lg:text-[2.75rem]"
                 >
                   {monthLabel(month).split(" ")[0]} <span className="text-muted">{month.slice(0, 4)}</span>
                 </motion.span>
@@ -171,13 +171,13 @@ export function Transactions() {
                               {Number(d.slice(8))}
                             </span>
                             {inMonth && v && v.in > 0 && (
-                              <span className={`w-full truncate text-[10px] leading-tight tabular-nums ${selected ? "" : "text-positive"}`}>
-                                +{compactMoney(v.in, currency)}
+                              <span className={`w-full text-[9px] leading-tight whitespace-nowrap tabular-nums min-[360px]:text-[10px] ${selected ? "" : "text-positive"}`}>
+                                +{compactNumber(v.in)}
                               </span>
                             )}
                             {inMonth && v && v.out > 0 && (
-                              <span className={`w-full truncate text-[10px] leading-tight tabular-nums ${selected ? "" : "text-muted"}`}>
-                                −{compactMoney(v.out, currency)}
+                              <span className={`w-full text-[9px] leading-tight whitespace-nowrap tabular-nums min-[360px]:text-[10px] ${selected ? "" : "text-muted"}`}>
+                                −{compactNumber(v.out)}
                               </span>
                             )}
                           </button>
@@ -185,15 +185,15 @@ export function Transactions() {
                       }}
                     />
                   </div>
-                  <dl className="grid grid-cols-3 gap-2 text-center">
+                  <dl className="flex flex-wrap gap-2 text-center">
                     {[
                       ["Money in", summary.income, "text-positive"],
                       ["Spent", summary.expense, ""],
                       ["Left", summary.balance, summary.balance < 0 ? "text-accent-text" : ""],
                     ].map(([label, value, cls]) => (
-                      <div key={label as string} className="rounded-2xl bg-surface px-2 py-3 shadow-[inset_0_0_0_1px_var(--line)]">
+                      <div key={label as string} className="min-w-fit flex-1 rounded-2xl bg-surface px-3 py-3 shadow-[inset_0_0_0_1px_var(--line)]">
                         <dt className="text-xs text-muted">{label}</dt>
-                        <dd className={`mt-0.5 truncate text-sm font-semibold tabular-nums sm:text-base ${cls}`}>
+                        <dd className={`mt-0.5 text-sm font-semibold whitespace-nowrap tabular-nums sm:text-base ${cls}`}>
                           {formatMoney(value as number, currency)}
                         </dd>
                       </div>
@@ -322,7 +322,7 @@ function Stats({
             className="rounded-2xl bg-surface p-4 shadow-[inset_0_0_0_1px_var(--line)]"
           >
             <dt className="text-sm text-muted">{t.label}</dt>
-            <dd className="mt-1 truncate text-2xl font-semibold tracking-tight tabular-nums">{t.value}</dd>
+            <dd className="mt-1 text-2xl leading-tight font-semibold tracking-tight wrap-break-word tabular-nums">{t.value}</dd>
             {t.sub && <dd className="text-xs text-muted">{t.sub}</dd>}
           </motion.div>
         ))}

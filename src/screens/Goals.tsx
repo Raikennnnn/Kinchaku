@@ -63,7 +63,7 @@ export function Goals() {
                   <span className="flex items-center gap-3">
                     <CategoryIcon icon={g.icon} color={g.color} size={44} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-semibold">{g.name}</span>
+                      <span className="block font-semibold wrap-break-word">{g.name}</span>
                       <span className="block text-sm text-muted">
                         {done ? "Reached" : `${fmt(g.target - s)} to go`}
                         {g.deadline && !done && ` · by ${dayLabel(g.deadline)}`}

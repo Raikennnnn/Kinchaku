@@ -44,7 +44,7 @@ export function PeriodNav({ period, onChange }: { period: Period; onChange: (p: 
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: dir >= 0 ? "-60%" : "60%" }}
               transition={{ duration: 0.35, ease: EASE_OUT }}
-              className="block truncate pb-1 font-display text-[1.8rem] font-semibold min-[400px]:text-[2.15rem] lg:text-[2.75rem]"
+              className="block pb-1 font-display text-[1.55rem] leading-tight font-semibold min-[360px]:text-[1.8rem] min-[400px]:text-[2.15rem] lg:text-[2.75rem]"
             >
               {main} {rest && <span className="text-muted">{rest}</span>}
             </motion.span>

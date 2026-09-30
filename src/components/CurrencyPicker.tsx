@@ -41,7 +41,7 @@ export function CurrencyPicker({ value, onPick, stickyTop = "top-0" }: Props) {
         className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-surface-2"
       >
         <span className="w-10 font-mono text-[13px] text-muted">{c.code}</span>
-        <span className="min-w-0 flex-1 truncate">{c.name}</span>
+        <span className="min-w-0 flex-1 wrap-break-word">{c.name}</span>
         <span className="text-muted">{c.symbol}</span>
         <CheckIcon size={16} weight="bold" className={c.code === value ? "text-accent-text" : "invisible"} />
       </button>

@@ -100,7 +100,7 @@ export function AppShell({ view, onNavigate, onOpenSettings, children }: Props) 
             <CategoryIcon icon={{ kind: "preset", name: ledger.icon }} color={ledger.color} size={28} />
             <span className="min-w-0 flex-1">
               <span className="block text-xs text-muted">Ledger</span>
-              <span className="block truncate text-sm font-semibold">{ledger.name}</span>
+              <span className="block text-sm font-semibold wrap-break-word">{ledger.name}</span>
             </span>
             <CaretDownIcon size={14} weight="bold" className="text-muted" aria-hidden="true" />
           </button>
@@ -138,7 +138,7 @@ export function AppShell({ view, onNavigate, onOpenSettings, children }: Props) 
               More
             </button>
           ) : (
-            <Brand size={26} />
+            <Brand size={26} compact={manyLedgers} />
           )}
           <div className="flex min-w-0 items-center">
             {ledger && manyLedgers && (
@@ -148,7 +148,7 @@ export function AppShell({ view, onNavigate, onOpenSettings, children }: Props) 
                 className="mr-1 flex min-w-0 items-center gap-1.5 rounded-full bg-surface py-1.5 pr-2.5 pl-1.5 text-sm font-medium shadow-[inset_0_0_0_1px_var(--line)]"
               >
                 <CategoryIcon icon={{ kind: "preset", name: ledger.icon }} color={ledger.color} size={22} />
-                <span className="truncate">{ledger.name}</span>
+                <span className="max-w-[9rem] truncate">{ledger.name}</span>
                 <CaretDownIcon size={12} weight="bold" className="shrink-0 text-muted" aria-hidden="true" />
               </button>
             )}
@@ -206,7 +206,7 @@ export function AppShell({ view, onNavigate, onOpenSettings, children }: Props) 
                 }`}
               >
                 <CategoryIcon icon={{ kind: "preset", name: l.icon }} color={l.color} size={36} />
-                <span className="min-w-0 flex-1 truncate font-semibold">{l.name}</span>
+                <span className="min-w-0 flex-1 font-semibold wrap-break-word">{l.name}</span>
                 {l.id === ledgerId && <CheckIcon size={18} weight="bold" className="text-accent-text" aria-label="Open" />}
               </button>
             </li>

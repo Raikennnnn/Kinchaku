@@ -45,7 +45,7 @@ export function Ledgers() {
                 }`}
               >
                 <CategoryIcon icon={{ kind: "preset", name: l.icon }} color={l.color} size={44} />
-                <span className="min-w-0 flex-1 truncate font-semibold">{l.name}</span>
+                <span className="min-w-0 flex-1 font-semibold wrap-break-word">{l.name}</span>
                 {l.id === active && (
                   <span className="flex items-center gap-1 text-sm font-medium text-accent-text">
                     <CheckIcon size={16} weight="bold" aria-hidden="true" />

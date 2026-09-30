@@ -18,6 +18,7 @@ import {
 } from "@phosphor-icons/react";
 import { getSetting, setSetting } from "../db";
 import { Sheet } from "../components/Sheet";
+import { ScrollRow } from "../components/ui";
 import { useKeyboardFit } from "../lib/keyboard";
 import { useCurrency, useLedgerId } from "../state";
 import { answer, greeting, insights, moodFor, QUICK_QUESTIONS, type Reply, type Verdict } from "./brain";
@@ -365,28 +366,26 @@ function PetChat({
               transition={{ duration: reduce ? 0 : 0.2 }}
               className="overflow-hidden"
             >
-              <div
-                className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-3 [scrollbar-width:none] lg:-mx-7 lg:px-7"
-                role="group"
-                aria-label={say(lang, "Quick questions", "Mabilisang tanong")}
-              >
-                {QUICK_QUESTIONS[lang].map((q, i) => {
-                  const Glyph = QUICK_ICONS[i] ?? ChatCircleIcon;
-                  return (
-                    <motion.button
-                      key={q}
-                      type="button"
-                      onClick={() => send(q)}
-                      initial={{ opacity: 0, y: 14 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ type: "spring", stiffness: 420, damping: 26, delay: reduce ? 0 : 0.35 + i * 0.06 }}
-                      className="flex shrink-0 items-center gap-1.5 rounded-full bg-surface py-2 pr-3.5 pl-3 text-sm whitespace-nowrap shadow-[inset_0_0_0_1px_var(--line)] transition-colors hover:bg-surface-2 active:scale-95"
-                    >
-                      <Glyph size={16} weight="duotone" className="text-accent-text" aria-hidden="true" />
-                      {q}
-                    </motion.button>
-                  );
-                })}
+              <div className="pb-3">
+                <ScrollRow label={say(lang, "Quick questions", "Mabilisang tanong")}>
+                  {QUICK_QUESTIONS[lang].map((q, i) => {
+                    const Glyph = QUICK_ICONS[i] ?? ChatCircleIcon;
+                    return (
+                      <motion.button
+                        key={q}
+                        type="button"
+                        onClick={() => send(q)}
+                        initial={{ opacity: 0, y: 14 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ type: "spring", stiffness: 420, damping: 26, delay: reduce ? 0 : 0.35 + i * 0.06 }}
+                        className="flex shrink-0 items-center gap-1.5 rounded-full bg-surface py-2 pr-3.5 pl-3 text-sm whitespace-nowrap shadow-[inset_0_0_0_1px_var(--line)] transition-colors hover:bg-surface-2 active:scale-95"
+                      >
+                        <Glyph size={16} weight="duotone" className="text-accent-text" aria-hidden="true" />
+                        {q}
+                      </motion.button>
+                    );
+                  })}
+                </ScrollRow>
               </div>
             </motion.div>
           )}
@@ -416,7 +415,7 @@ function PetChat({
               }
             }}
             maxLength={300}
-            placeholder={expectAmount ? say(lang, "How much? e.g. 2500", "Magkano? hal. 2500") : say(lang, `Message ${name}`, `Mensahe kay ${name}`)}
+            placeholder={expectAmount ? say(lang, "How much? e.g. 2500", "Magkano? hal. 2500") : name.length > 10 ? say(lang, "Ask about your money", "Magtanong tungkol sa pera") : say(lang, `Message ${name}`, `Mensahe kay ${name}`)}
             autoComplete="off"
             enterKeyHint="send"
             className="max-h-32 min-h-10 flex-1 resize-none bg-transparent py-2 text-base leading-6 placeholder:text-muted focus-visible:outline-none"
@@ -504,7 +503,7 @@ function ChatHeader({ name, mood, typing, lang }: { name: string; mood: Mood; ty
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -4 }}
             transition={{ duration: 0.18 }}
-            className={`truncate text-sm ${typing ? "text-accent-text" : "text-muted"}`}
+            className={`text-sm leading-snug ${typing ? "text-accent-text" : "text-muted"}`}
           >
             {status}
           </motion.p>

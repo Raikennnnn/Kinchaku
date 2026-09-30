@@ -28,7 +28,7 @@ function Row({ icon: Glyph, label, hint, onClick }: { icon: Icon; label: string;
         </span>
         <span className="min-w-0 flex-1">
           <span className="block font-medium">{label}</span>
-          <span className="block truncate text-sm text-muted">{hint}</span>
+          <span className="block text-sm text-muted">{hint}</span>
         </span>
         <CaretRightIcon size={16} weight="bold" className="text-muted" aria-hidden="true" />
       </button>

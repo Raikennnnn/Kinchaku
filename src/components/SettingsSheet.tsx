@@ -59,7 +59,7 @@ export function SettingsSheet({ open, currency, onClose, onOpenCategories }: Pro
             <button type="button" onClick={() => setChanging(true)} className={row}>
               <span>Currency</span>
               <span className="flex min-w-0 items-center gap-2 text-muted">
-                <span className="truncate">{name}</span>
+                <span className="text-right wrap-break-word">{name}</span>
                 <CaretRightIcon size={16} weight="bold" aria-hidden="true" />
               </span>
             </button>

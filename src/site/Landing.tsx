@@ -239,15 +239,15 @@ function CarryOverPreview() {
           return (
             <motion.li key={l.id} variants={row} className="flex items-center gap-3 px-1 py-1">
               <CategoryIcon icon={c.icon} color={c.color} size={30} />
-              <span className="min-w-0 flex-1 truncate">{l.label}</span>
-              <span className="font-semibold text-positive tabular-nums">+{formatMoney(l.amount, SAMPLE_CURRENCY)}</span>
+              <span className="min-w-0 flex-1 wrap-break-word">{l.label}</span>
+              <span className="shrink-0 font-semibold whitespace-nowrap text-positive tabular-nums">+{formatMoney(l.amount, SAMPLE_CURRENCY)}</span>
             </motion.li>
           );
         })}
         <motion.li variants={row} className="flex items-center gap-3 px-1 py-1">
           <CategoryIcon icon={{ kind: "preset", name: "utensils" }} color="#22c55e" size={30} />
-          <span className="min-w-0 flex-1 truncate">Spent</span>
-          <span className="font-semibold tabular-nums">−{formatMoney(expense, SAMPLE_CURRENCY)}</span>
+          <span className="min-w-0 flex-1">Spent</span>
+          <span className="shrink-0 font-semibold whitespace-nowrap tabular-nums">−{formatMoney(expense, SAMPLE_CURRENCY)}</span>
         </motion.li>
       </motion.ul>
       <div className="mt-3 flex items-center justify-between border-t border-line px-1 pt-3 text-sm">

@@ -12,6 +12,7 @@ import { CategoryIcon } from "./CategoryIcon";
 import { ColorPicker, IconGrid } from "./pickers";
 import { Sheet } from "./Sheet";
 import { AmountField, FormError, ProgressBar, Toggle } from "./ui";
+import { FitText } from "./motion";
 
 const GOAL_ICONS: PresetIconName[] = ["piggy-bank", "plane", "house", "car", "laptop", "smartphone", "graduation-cap", "gift", "heart", "umbrella", "bike", "ticket"];
 
@@ -154,7 +155,7 @@ function GoalDetail({ goal, onEdit }: { goal: Goal; onEdit: (g: Goal) => void })
       <div className="flex items-center gap-4">
         <CategoryIcon icon={goal.icon} color={goal.color} size={56} />
         <div className="min-w-0 flex-1">
-          <p className="text-3xl font-semibold tracking-tight tabular-nums">{fmt(saved)}</p>
+          <FitText className="text-3xl font-semibold tracking-tight tabular-nums">{fmt(saved)}</FitText>
           <p className="text-sm text-muted">
             of {fmt(goal.target)}
             {goal.deadline && ` by ${dayLabel(goal.deadline)}`}
@@ -230,9 +231,9 @@ function GoalDetail({ goal, onEdit }: { goal: Goal; onEdit: (g: Goal) => void })
               <li key={d.id} className="flex items-center gap-3 py-2.5 text-sm">
                 <span className="min-w-0 flex-1">
                   <span className="block">{dayLabel(d.date)}</span>
-                  {d.note && <span className="block truncate text-muted">{d.note}</span>}
+                  {d.note && <span className="line-clamp-2 text-muted wrap-break-word">{d.note}</span>}
                 </span>
-                <span className={`font-semibold tabular-nums ${d.amount > 0 ? "text-positive" : ""}`}>
+                <span className={`shrink-0 font-semibold whitespace-nowrap tabular-nums ${d.amount > 0 ? "text-positive" : ""}`}>
                   {d.amount > 0 ? "+" : "−"}
                   {fmt(Math.abs(d.amount))}
                 </span>

@@ -68,7 +68,7 @@ export function Categories() {
                   >
                     <CategoryIcon icon={c.icon} color={c.color} size={46} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-semibold">{c.name}</span>
+                      <span className="block font-semibold wrap-break-word">{c.name}</span>
                       <span className="block text-sm text-muted">
                         {count === 0 ? "Not used yet" : count === 1 ? "1 entry" : `${count} entries`}
                       </span>

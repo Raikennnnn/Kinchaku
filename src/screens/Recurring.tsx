@@ -47,18 +47,18 @@ export function Recurring() {
               className={`flex items-center gap-3.5 rounded-2xl bg-surface p-3.5 shadow-[inset_0_0_0_1px_var(--line)] ${r.active ? "" : "opacity-60"}`}
             >
               <CategoryIcon icon={c.icon} color={c.color} size={44} />
-              <span className="min-w-0 flex-1">
-                <span className="block truncate font-semibold">
-                  {c.name}
-                  {r.note && <span className="font-normal text-muted"> · {r.note}</span>}
-                </span>
+              <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+              <span className="min-w-[7rem] flex-1">
+                <span className="block font-semibold wrap-break-word">{c.name}</span>
+                {r.note && <span className="line-clamp-2 text-sm text-muted wrap-break-word">{r.note}</span>}
                 <span className="block text-sm text-muted">
                   {FREQUENCY_LABEL[r.frequency]} · {r.active ? `next ${dayLabel(r.nextDate)}` : "paused"}
                 </span>
               </span>
-              <span className={`font-semibold tabular-nums ${r.type === "income" ? "text-positive" : ""}`}>
+              <span className={`ml-auto shrink-0 font-semibold whitespace-nowrap tabular-nums ${r.type === "income" ? "text-positive" : ""}`}>
                 {r.type === "income" ? "+" : "−"}
                 {formatMoney(r.amount, currency)}
+              </span>
               </span>
               <button
                 type="button"

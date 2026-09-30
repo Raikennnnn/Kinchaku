@@ -278,9 +278,9 @@ export function CategoryBars({ slices, currency, onSelect }: { slices: Slice[]; 
       {slices.map((s, i) => (
         <li key={s.id}>
           <button type="button" onClick={() => onSelect?.(s.id)} className="block w-full rounded-lg text-left transition hover:bg-surface-2/60">
-            <span className="flex items-baseline justify-between gap-3 text-sm">
-              <span className="truncate">{s.category.name}</span>
-              <span className="tabular-nums">
+            <span className="flex flex-wrap items-baseline justify-between gap-x-3 text-sm">
+              <span className="min-w-[7rem] flex-1 wrap-break-word">{s.category.name}</span>
+              <span className="ml-auto whitespace-nowrap tabular-nums">
                 <span className="font-semibold">{formatMoney(s.amount, currency)}</span>
                 <span className="ml-1.5 text-muted">{Math.round(s.share * 100)}%</span>
               </span>

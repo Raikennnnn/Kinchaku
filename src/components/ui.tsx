@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 import { motion } from "motion/react";
 import { currencyDigits, currencySymbol } from "../lib/money";
 import { EASE_OUT } from "./motion";
@@ -117,7 +117,9 @@ export function AmountField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={(0).toFixed(digits)}
-          className="w-full min-w-0 bg-transparent text-[2.5rem] leading-none font-semibold tracking-tight tabular-nums outline-none placeholder:text-muted/50"
+          className={`w-full min-w-0 bg-transparent leading-none font-semibold tracking-tight tabular-nums outline-none placeholder:text-muted/50 ${
+            value.length > 11 ? "text-[1.6rem]" : value.length > 8 ? "text-[2rem]" : "text-[2.5rem]"
+          }`}
         />
       </span>
     </label>
@@ -143,9 +145,67 @@ export function FormError({ message }: { message: string | null }) {
 
 /** A row of choice chips that scrolls sideways when it doesn't fit. */
 export function ChipRow({ children, label }: { children: ReactNode; label: string }) {
+  return <ScrollRow label={label}>{children}</ScrollRow>;
+}
+
+/**
+ * A row that scrolls sideways when its items don't fit, and shows it: the ends
+ * fade where more is hidden, and a thin track underneath shows how much there
+ * is and where you are (phones hide real scrollbars, so it's drawn here).
+ * Items come to rest at a clean edge. It runs to the edges of its sheet or
+ * screen (the -mx/px pair) so nothing is cut short of the edge.
+ */
+export function ScrollRow({ children, label }: { children: ReactNode; label: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [view, setView] = useState({ left: false, right: false, share: 1, at: 0 });
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const measure = () => {
+      const room = el.scrollWidth - el.clientWidth;
+      setView({
+        left: el.scrollLeft > 2,
+        right: el.scrollLeft < room - 2,
+        share: el.scrollWidth > 0 ? el.clientWidth / el.scrollWidth : 1,
+        at: room > 0 ? el.scrollLeft / room : 0,
+      });
+    };
+    measure();
+    el.addEventListener("scroll", measure, { passive: true });
+    const resize = new ResizeObserver(measure);
+    resize.observe(el);
+    for (const child of el.children) resize.observe(child);
+    return () => {
+      el.removeEventListener("scroll", measure);
+      resize.disconnect();
+    };
+  }, [children]);
+
+  const scrolls = view.share < 0.995;
+  const fade = scrolls
+    ? `linear-gradient(to right, ${view.left ? "transparent, #000 32px" : "#000, #000"}, ${view.right ? "#000 calc(100% - 32px), transparent" : "#000, #000"})`
+    : undefined;
+
   return (
-    <div role="group" aria-label={label} className="-mx-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] lg:-mx-7 lg:px-7">
-      {children}
+    <div className="-mx-5 lg:-mx-7">
+      <div
+        ref={ref}
+        role="group"
+        aria-label={label}
+        className="flex snap-x snap-proximity scroll-px-5 gap-2 overflow-x-auto overscroll-x-contain px-5 pb-1 [scrollbar-width:none] lg:scroll-px-7 lg:px-7 [&::-webkit-scrollbar]:hidden [&>*]:snap-start"
+        style={{ maskImage: fade, WebkitMaskImage: fade }}
+      >
+        {children}
+      </div>
+      {scrolls && (
+        <div aria-hidden="true" className="mx-5 mt-1.5 h-1 overflow-hidden rounded-full bg-line lg:mx-7">
+          <div
+            className="h-full rounded-full bg-muted/70"
+            style={{ width: `${view.share * 100}%`, marginLeft: `${view.at * (1 - view.share) * 100}%` }}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -179,7 +239,7 @@ export function Chip({
 export function ScreenHeader({ title, children }: { title: string; children?: ReactNode }) {
   return (
     <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
-      <h1 className="min-w-0 truncate font-display text-[1.8rem] leading-none font-semibold min-[400px]:text-[2.15rem] lg:text-[2.75rem]">
+      <h1 className="min-w-0 font-display text-[1.55rem] leading-none font-semibold wrap-break-word min-[360px]:text-[1.8rem] min-[400px]:text-[2.15rem] lg:text-[2.75rem]">
         {title}
       </h1>
       {children && <div className="flex shrink-0 items-center gap-2">{children}</div>}

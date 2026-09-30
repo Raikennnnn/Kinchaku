@@ -15,7 +15,7 @@ type Props = {
 export function CategoryLegend({ slices, currency, budgets, onSelect }: Props) {
   if (slices.length === 0) return null;
   return (
-    <ul className="grid grid-cols-2 gap-x-3 gap-y-2" aria-label="By category">
+    <ul className="grid grid-cols-1 gap-x-3 gap-y-2 min-[380px]:grid-cols-2" aria-label="By category">
       {slices.map((s) => {
         const limit = budgets?.get(s.id);
         return (
@@ -28,7 +28,7 @@ export function CategoryLegend({ slices, currency, budgets, onSelect }: Props) {
             >
               <CategoryIcon icon={s.category.icon} color={s.category.color} size={34} />
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-sm">{s.category.name}</span>
+                <span className="block text-sm leading-snug wrap-break-word">{s.category.name}</span>
                 <span className="block text-sm tabular-nums">
                   <span className="font-semibold">{formatMoney(s.amount, currency)}</span>
                   <span className="ml-1.5 text-muted">

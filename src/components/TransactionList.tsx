@@ -93,9 +93,10 @@ export function TransactionList({ days, currency, categoryOf, accountName, onSel
                           }`}
                         >
                           <CategoryIcon icon={c.icon} color={c.color} size={40} />
-                          <span className="min-w-0 flex-1">
+                          <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                          <span className="min-w-[7rem] flex-1">
                             <span className="flex items-center gap-1.5">
-                              <span className="truncate font-medium">{c.name}</span>
+                              <span className="font-medium wrap-break-word">{c.name}</span>
                               {t.recurringId && (
                                 <ArrowsClockwiseIcon size={13} weight="bold" className="shrink-0 text-muted" aria-label="Repeats" />
                               )}
@@ -105,11 +106,12 @@ export function TransactionList({ days, currency, categoryOf, accountName, onSel
                                 </span>
                               )}
                             </span>
-                            {detail && <span className="block truncate text-sm text-muted">{detail}</span>}
+                            {detail && <span className="line-clamp-2 text-sm text-muted wrap-break-word">{detail}</span>}
                           </span>
-                          <span className={`font-semibold tabular-nums ${income ? "text-positive" : ""}`}>
+                          <span className={`ml-auto shrink-0 font-semibold whitespace-nowrap tabular-nums ${income ? "text-positive" : ""}`}>
                             {income ? "+" : "−"}
                             {fmt(t.amount)}
+                          </span>
                           </span>
                         </button>
                         </SwipeToDelete>

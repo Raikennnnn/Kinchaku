@@ -15,6 +15,7 @@ import { EntrySheet } from "./EntrySheet";
 import { Sheet } from "./Sheet";
 import { TransactionList } from "./TransactionList";
 import { ProgressBar } from "./ui";
+import { FitText } from "./motion";
 
 type Props = {
   category: Category | null;
@@ -63,9 +64,9 @@ function Detail({ category, period, categories, categoryOf, accountName }: Omit<
           <p className="text-sm text-muted">
             {category.kind === "income" ? "Received" : "Spent"} {periodPhrase(period)}
           </p>
-          <p className={`text-3xl font-semibold tracking-tight tabular-nums ${category.kind === "income" ? "text-positive" : ""}`}>
+          <FitText className={`text-3xl font-semibold tracking-tight tabular-nums ${category.kind === "income" ? "text-positive" : ""}`}>
             {formatMoney(total, currency)}
-          </p>
+          </FitText>
         </div>
         {!category.system && (
           <button

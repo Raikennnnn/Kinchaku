@@ -1,4 +1,4 @@
-import { useEffect, useRef, type ElementType, type ReactNode } from "react";
+import { useEffect, useRef, type ElementType, type ReactNode, useLayoutEffect } from "react";
 import {
   animate,
   motion,
@@ -124,6 +124,39 @@ export function RevealWords({
         ))}
       </motion.span>
     </Tag>
+  );
+}
+
+/**
+ * One line (a big amount) that shrinks to fit its box instead of being cut
+ * off: the font steps down just enough, never below `min` px. It re-measures
+ * when the box resizes and when the text changes (AnimatedMoney counting up).
+ */
+export function FitText({ children, className = "", min = 18 }: { children: ReactNode; className?: string; min?: number }) {
+  const ref = useRef<HTMLSpanElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const fit = () => {
+      el.style.fontSize = "";
+      if (el.scrollWidth <= el.clientWidth + 0.5) return;
+      const base = parseFloat(getComputedStyle(el).fontSize);
+      el.style.fontSize = `${Math.max(min, Math.floor(base * (el.clientWidth / el.scrollWidth) * 0.97))}px`;
+    };
+    fit();
+    const resize = new ResizeObserver(fit);
+    if (el.parentElement) resize.observe(el.parentElement);
+    const text = new MutationObserver(fit);
+    text.observe(el, { subtree: true, childList: true, characterData: true });
+    return () => {
+      resize.disconnect();
+      text.disconnect();
+    };
+  }, [min]);
+  return (
+    <span ref={ref} className={`block min-w-0 overflow-hidden whitespace-nowrap ${className}`}>
+      {children}
+    </span>
   );
 }
 

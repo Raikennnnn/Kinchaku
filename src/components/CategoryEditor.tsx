@@ -139,7 +139,7 @@ function EditorForm({ category, kind: newKind, categories: allCategories, usage,
           </AnimatePresence>
         </span>
         <div className="min-w-0">
-          <p className={`truncate font-display text-2xl font-semibold ${name.trim() ? "" : "text-muted"}`}>
+          <p className={`font-display text-2xl leading-tight font-semibold wrap-break-word ${name.trim() ? "" : "text-muted"}`}>
             {name.trim() || "Category name"}
           </p>
           <p className="text-sm text-muted">Preview</p>

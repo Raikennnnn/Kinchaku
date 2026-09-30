@@ -9,7 +9,7 @@ import { formatMoney } from "../lib/money";
 import { useCurrency, useLedgerId } from "../state";
 import { AccountSheet, accountTypeLabel, TransferSheet } from "../components/AccountSheets";
 import { CategoryIcon } from "../components/CategoryIcon";
-import { AnimatedMoney, Stagger, staggerChild } from "../components/motion";
+import { AnimatedMoney, FitText, Stagger, staggerChild } from "../components/motion";
 import { Screen, ScreenHeader } from "../components/ui";
 
 /** Where the money is: every account's balance, net worth, and transfers between them. */
@@ -50,13 +50,15 @@ export function Accounts() {
           className="flex w-full items-center gap-3.5 rounded-2xl bg-surface p-3.5 text-left shadow-[inset_0_0_0_1px_var(--line)] transition hover:bg-surface-2 active:scale-[0.99]"
         >
           <CategoryIcon icon={a.icon} color={a.color} size={44} />
-          <span className="min-w-0 flex-1">
-            <span className="block truncate font-semibold">{a.name}</span>
+          <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+          <span className="min-w-[7rem] flex-1">
+            <span className="block font-semibold wrap-break-word">{a.name}</span>
             <span className="block text-sm text-muted">{accountTypeLabel(a.type)}</span>
           </span>
-          <span className="text-right tabular-nums">
+          <span className="ml-auto text-right whitespace-nowrap tabular-nums">
             <span className={`block font-semibold ${b < 0 ? "text-accent-text" : ""}`}>{fmt(Math.abs(b))}</span>
             <span className="block text-xs text-muted">{owes || b < 0 ? "owed" : "available"}</span>
+          </span>
           </span>
         </button>
       </motion.li>
@@ -99,7 +101,9 @@ export function Accounts() {
           {hidden ? (
             <p className="relative text-[2.75rem] leading-none font-semibold tracking-tight">••••</p>
           ) : (
-            <AnimatedMoney value={assets - liabilities} currency={currency} className="relative block text-[2.75rem] leading-none font-semibold tracking-tight tabular-nums" />
+            <FitText className="relative text-[2.75rem] leading-none font-semibold tracking-tight tabular-nums">
+              <AnimatedMoney value={assets - liabilities} currency={currency} />
+            </FitText>
           )}
           <dl className="relative mt-5 grid grid-cols-2 gap-3 text-sm">
             <div>
@@ -144,9 +148,9 @@ export function Accounts() {
                   <button type="button" onClick={() => setTransfer(t)} className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm hover:bg-surface-2">
                     <span className="min-w-0 flex-1">
                       <span className="flex items-center gap-1.5 font-medium">
-                        <span className="truncate">{names.get(t.fromId) ?? "Deleted"}</span>
+                        <span className="wrap-break-word">{names.get(t.fromId) ?? "Deleted"}</span>
                         <ArrowRightIcon size={12} weight="bold" className="shrink-0 text-muted" aria-label="to" />
-                        <span className="truncate">{names.get(t.toId) ?? "Deleted"}</span>
+                        <span className="wrap-break-word">{names.get(t.toId) ?? "Deleted"}</span>
                       </span>
                       <span className="block text-muted">
                         {dayLabel(t.date)}

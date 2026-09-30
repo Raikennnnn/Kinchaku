@@ -47,8 +47,8 @@ export function AccountSection() {
           <div className="flex items-center gap-3">
             <Avatar name={user.name ?? user.email ?? "?"} photo={user.photo} />
             <div className="min-w-0 flex-1">
-              {user.name && <p className="truncate font-semibold">{user.name}</p>}
-              <p className={`truncate ${user.name ? "text-sm text-muted" : "font-semibold"}`}>{user.email}</p>
+              {user.name && <p className="font-semibold wrap-break-word">{user.name}</p>}
+              <p className={`wrap-anywhere ${user.name ? "text-sm text-muted" : "font-semibold"}`}>{user.email}</p>
             </div>
           </div>
           <p className="mt-3 flex items-center gap-2 text-sm" role="status">

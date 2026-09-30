@@ -13,7 +13,7 @@ import { useCurrency, useLedgerId } from "../state";
 import { BudgetSheet, type BudgetTarget } from "../components/BudgetSheet";
 import { CategoryDetailSheet } from "../components/CategoryDetailSheet";
 import { CategoryIcon } from "../components/CategoryIcon";
-import { Stagger, staggerChild } from "../components/motion";
+import { FitText, Stagger, staggerChild } from "../components/motion";
 import { ProgressBar, Screen, ScreenHeader } from "../components/ui";
 import { motion } from "motion/react";
 
@@ -73,9 +73,9 @@ export function Budgets() {
           <p className="text-sm text-brand-muted">Monthly budget</p>
           {total ? (
             <>
-              <p className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">
+              <FitText className="mt-1 text-3xl font-semibold tracking-tight tabular-nums">
                 {summary.expense > total.amount ? `${fmt(summary.expense - total.amount)} over` : `${fmt(total.amount - summary.expense)} left`}
-              </p>
+              </FitText>
               <p className="mt-1 text-sm text-brand-muted tabular-nums">
                 {fmt(summary.expense)} spent of {fmt(total.amount)}
               </p>
@@ -117,15 +117,17 @@ export function Budgets() {
                     >
                       <span className="flex items-center gap-3">
                         <CategoryIcon icon={c.icon} color={c.color} size={40} />
-                        <span className="min-w-0 flex-1">
-                          <span className="block truncate font-semibold">{c.name}</span>
+                        <span className="flex min-w-0 flex-1 flex-wrap items-center justify-between gap-x-3 gap-y-1">
+                        <span className="min-w-[7rem] flex-1">
+                          <span className="block font-semibold wrap-break-word">{c.name}</span>
                           <span className={`block text-sm tabular-nums ${status === "over" ? "text-accent-text" : "text-muted"}`}>
                             {status === "over" ? `${fmt(spent - limit)} over` : `${fmt(limit - spent)} left`}
                           </span>
                         </span>
-                        <span className="text-right text-sm tabular-nums">
+                        <span className="ml-auto text-right text-sm whitespace-nowrap tabular-nums">
                           <span className="block font-semibold">{fmt(spent)}</span>
                           <span className="block text-muted">of {fmt(limit)}</span>
+                        </span>
                         </span>
                       </span>
                       <ProgressBar className="mt-3" value={spent} max={limit} color={c.color} label={`${c.name} budget used`} />
@@ -150,7 +152,7 @@ export function Budgets() {
                   >
                     <CategoryIcon icon={c.icon} color={c.color} size={36} />
                     <span className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{c.name}</span>
+                      <span className="block font-medium wrap-break-word">{c.name}</span>
                       <span className="block text-sm text-muted tabular-nums">{fmt(summary.spentByCategory.get(c.id) ?? 0)} spent</span>
                     </span>
                     <span className="text-sm font-semibold text-accent-text">Set</span>

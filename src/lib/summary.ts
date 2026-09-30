@@ -53,6 +53,11 @@ export function summarize(transactions: Transaction[], categoryOf: (id: string) 
 }
 
 /** Compact money for tight spots like calendar cells: "1.2K", "30K", "1.5M". */
+/** "1.3K", "98.8M": a short amount without the currency, for tight spots like calendar days. */
+export function compactNumber(amount: number): string {
+  return new Intl.NumberFormat(undefined, { notation: "compact", maximumFractionDigits: 1 }).format(amount / 1000);
+}
+
 export function compactMoney(amount: number, currency: string): string {
   return new Intl.NumberFormat(undefined, {
     style: "currency",
