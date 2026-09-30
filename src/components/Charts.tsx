@@ -20,7 +20,7 @@ function Tooltip({ tip, align = "center" }: { tip: Tip; align?: Align }) {
   return (
     <div
       role="status"
-      className={`pointer-events-none absolute z-10 ${ALIGN[align]} -translate-y-full rounded-xl bg-ink px-3 py-2 text-xs whitespace-nowrap text-bg shadow-lg`}
+      className={`pointer-events-none absolute z-40 ${ALIGN[align]} -translate-y-full rounded-xl bg-ink px-3 py-2 text-xs whitespace-nowrap text-bg shadow-lg`}
       style={{ left: tip.x, top: tip.y - 8 }}
     >
       <p className="font-semibold">{tip.title}</p>
